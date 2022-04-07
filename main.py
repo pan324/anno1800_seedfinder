@@ -267,7 +267,7 @@ if __name__ == "__main__":
                 p.terminate()
         # Success. Sort the numbers and save to file.
         with open(baselinepath,"w") as f:
-            f.write(" ".join(unwantedbaseline)+" ; "+" ".join(unwantedbaseline)+" ; "+" ".join(unwantedbaseline)+"\n")
+            f.write(" ".join(unwantedbaseline)+" ; "+" ".join(wantedbaselineold)+" ; "+" ".join(wantedbaselinecape)+"\n")
             for seed in sorted(seeds):
                 f.write(str(seed)+"\n")
         print("Baseline created.\n\n\n")
