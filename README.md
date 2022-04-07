@@ -18,7 +18,8 @@ The results can be visualized. A map with islands and NPCs can be either shown d
 
 1) You must have Python: https://www.python.org/downloads/ Do the opposite of the install recommendations: Activate the PATH checkbox and do not install for all users.
 2) The Python packages can be installed from a cmd window with: pip install numpy pandas matplotlib Pillow 
-    1. If pip is not found, you did not select the PATH checkbox and you need to set your environment variable (or just reinstall). If it fails due to permissions, then Python was installed for all users and not in the user directory, so cmd must be run from admin mode (or just reinstall).
+    1. If pip is not found, you did not select the PATH checkbox and you need to set your environment variable (or just reinstall). 
+    2. If it fails due to permissions, then Python was installed for all users and not in the user directory, so cmd must be run from admin mode (or just reinstall).
 3) Right click on the main.py file and choose Edit with IDLE. Adjust the settings as needed and press F5 to run. Readjust settings and press F5 again.
 
 
