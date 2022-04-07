@@ -1,0 +1,266 @@
+<Content>
+  <MapTemplate>
+    <Size>0008000000080000</Size>
+    <PlayableArea>C8000000C80000003807000038070000</PlayableArea>
+    <RandomlyPlacedThirdParties />
+    <ElementCount>16000000</ElementCount>
+    <TemplateElement>
+      <ElementType>01000000</ElementType>
+      <Element>
+        <Position>D8000000A8050000</Position>
+        <Size>0200</Size>
+        <Difficulty />
+        <Config>
+          <Type />
+          <Difficulty />
+        </Config>
+      </Element>
+    </TemplateElement>
+    <TemplateElement>
+      <ElementType>01000000</ElementType>
+      <Element>
+        <Position>58020000E0040000</Position>
+        <Difficulty />
+        <Config>
+          <Type>
+            <id>0400</id>
+          </Type>
+          <Difficulty />
+        </Config>
+      </Element>
+    </TemplateElement>
+    <TemplateElement>
+      <ElementType>01000000</ElementType>
+      <Element>
+        <Position>F804000058050000</Position>
+        <Size>0100</Size>
+        <Difficulty />
+        <Config>
+          <Type>
+            <id>0100</id>
+          </Type>
+          <Difficulty />
+        </Config>
+      </Element>
+    </TemplateElement>
+    <TemplateElement>
+      <ElementType>02000000</ElementType>
+      <Element>
+        <Position>A0020000E8010000</Position>
+      </Element>
+    </TemplateElement>
+    <TemplateElement>
+      <ElementType>01000000</ElementType>
+      <Element>
+        <Position>B8020000F8010000</Position>
+        <Size>0200</Size>
+        <Difficulty />
+        <Config>
+          <Type />
+          <Difficulty />
+        </Config>
+      </Element>
+    </TemplateElement>
+    <TemplateElement>
+      <ElementType>01000000</ElementType>
+      <Element>
+        <Position>88040000C8030000</Position>
+        <Size>0200</Size>
+        <Difficulty />
+        <Config>
+          <Type />
+          <Difficulty />
+        </Config>
+      </Element>
+    </TemplateElement>
+    <TemplateElement>
+      <ElementType>01000000</ElementType>
+      <Element>
+        <Position>1806000048040000</Position>
+        <Size>0100</Size>
+        <Difficulty />
+        <Config>
+          <Type>
+            <id>0100</id>
+          </Type>
+          <Difficulty />
+        </Config>
+      </Element>
+    </TemplateElement>
+    <TemplateElement>
+      <ElementType>01000000</ElementType>
+      <Element>
+        <Position>A8020000D8000000</Position>
+        <Size>0100</Size>
+        <Difficulty />
+        <Config>
+          <Type>
+            <id>0100</id>
+          </Type>
+          <Difficulty />
+        </Config>
+      </Element>
+    </TemplateElement>
+    <TemplateElement>
+      <ElementType>01000000</ElementType>
+      <Element>
+        <Position>98010000F8010000</Position>
+        <Size>0100</Size>
+        <Difficulty />
+        <Config>
+          <Type>
+            <id>0100</id>
+          </Type>
+          <Difficulty />
+        </Config>
+      </Element>
+    </TemplateElement>
+    <TemplateElement>
+      <ElementType>01000000</ElementType>
+      <Element>
+        <Position>48040000A8020000</Position>
+        <Size>0100</Size>
+        <Difficulty />
+        <Config>
+          <Type />
+          <Difficulty />
+        </Config>
+      </Element>
+    </TemplateElement>
+    <TemplateElement>
+      <ElementType>01000000</ElementType>
+      <Element>
+        <Position>1806000068050000</Position>
+        <Difficulty />
+        <Config>
+          <Type>
+            <id>0300</id>
+          </Type>
+          <Difficulty />
+        </Config>
+      </Element>
+    </TemplateElement>
+    <TemplateElement>
+      <ElementType>01000000</ElementType>
+      <Element>
+        <Position>1806000038060000</Position>
+        <Difficulty />
+        <Config>
+          <Type>
+            <id>0300</id>
+          </Type>
+          <Difficulty />
+        </Config>
+      </Element>
+    </TemplateElement>
+    <TemplateElement>
+      <ElementType>01000000</ElementType>
+      <Element>
+        <Position>78030000C8030000</Position>
+        <Difficulty />
+        <Config>
+          <Type>
+            <id>0300</id>
+          </Type>
+          <Difficulty />
+        </Config>
+      </Element>
+    </TemplateElement>
+    <TemplateElement>
+      <ElementType>02000000</ElementType>
+      <Element>
+        <Position>B002000000020000</Position>
+      </Element>
+    </TemplateElement>
+    <TemplateElement>
+      <ElementType>01000000</ElementType>
+      <Element>
+        <Position>48040000E0010000</Position>
+        <Difficulty />
+        <Config>
+          <Type>
+            <id>0300</id>
+          </Type>
+          <Difficulty />
+        </Config>
+      </Element>
+    </TemplateElement>
+    <TemplateElement>
+      <ElementType>01000000</ElementType>
+      <Element>
+        <Position>60050000F8020000</Position>
+        <Difficulty />
+        <Config>
+          <Type>
+            <id>0300</id>
+          </Type>
+          <Difficulty />
+        </Config>
+      </Element>
+    </TemplateElement>
+    <TemplateElement>
+      <ElementType>02000000</ElementType>
+      <Element>
+        <Position>0006000050050000</Position>
+      </Element>
+    </TemplateElement>
+    <TemplateElement>
+      <ElementType>02000000</ElementType>
+      <Element>
+        <Position>2006000060050000</Position>
+      </Element>
+    </TemplateElement>
+    <TemplateElement>
+      <ElementType>01000000</ElementType>
+      <Element>
+        <Position>D801000028010000</Position>
+        <Difficulty />
+        <Config>
+          <Type>
+            <id>0300</id>
+          </Type>
+          <Difficulty />
+        </Config>
+      </Element>
+    </TemplateElement>
+    <TemplateElement>
+      <ElementType>01000000</ElementType>
+      <Element>
+        <Position>0801000028010000</Position>
+        <Difficulty />
+        <Config>
+          <Type>
+            <id>0300</id>
+          </Type>
+          <Difficulty />
+        </Config>
+      </Element>
+    </TemplateElement>
+    <TemplateElement>
+      <ElementType>01000000</ElementType>
+      <Element>
+        <Position>D8000000F8010000</Position>
+        <Difficulty />
+        <Config>
+          <Type>
+            <id>0300</id>
+          </Type>
+          <Difficulty />
+        </Config>
+      </Element>
+    </TemplateElement>
+    <TemplateElement>
+      <ElementType>01000000</ElementType>
+      <Element>
+        <Position>4805000068060000</Position>
+        <Difficulty />
+        <Config>
+          <Type>
+            <id>0300</id>
+          </Type>
+          <Difficulty />
+        </Config>
+      </Element>
+    </TemplateElement>
+  </MapTemplate>
+</Content>
