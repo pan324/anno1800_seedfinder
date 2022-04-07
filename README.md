@@ -1,14 +1,12 @@
 # Anno 1800 Seed Finder and Visualizer
 
-These finder supports these filters:
+The finder supports these filters:
 
 1) Unwanted islands. These islands may not appear in old world or cape.
 2) Wanted islands (old world). These islands must appear in the old world.
 3) Wanted islands (cape). These islands must appear in cape.
 
-The finder code is in main.py. The map type, map size, island size and island difficulty can be adjusted. The finder always checks both the old world and the cape world.
-
-The code works in two iterations, a rough baseline filtering for rivers and then a fast seed refinement step. 
+The map type, map size, island size and island difficulty can be adjusted. The finder works in two iterations, a rough baseline filtering for rivers and then a fast seed refinement step. 
 
 1) The baseline filtering brute forces through all 2147483648 possible seeds to discard universally bad islands (e.g. with rivers). Results are saved to disk. Performance is roughly 1 million seeds per second per CPU core, which means comfortable 2.5 minutes runtime on a 5950X. Baselines for the largest maps are already shipped with the repository. (Although only Atoll, Corners, Snowflake are recommended because they have the most islands. Run util.py for more information.)
 2) The seed refinement loads the seeds created in step 1 from disk. Because relatively few seeds are left, refinement takes just a second to run. This makes it easy to tweak the requirements until just a handful of excellent seeds is found.
