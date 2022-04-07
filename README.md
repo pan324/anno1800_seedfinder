@@ -1,10 +1,12 @@
 # Anno 1800 Seed Finder and Visualizer
 
-The finder code is in main.py. The map type, map size, island size and island difficulty can be adjusted. The finder always checks both the old world and the cape world. These filters are allowed:
+These finder supports these filters:
 
 1) Unwanted islands. These islands may not appear in old world or cape.
 2) Wanted islands (old world). These islands must appear in the old world.
 3) Wanted islands (cape). These islands must appear in cape.
+
+The finder code is in main.py. The map type, map size, island size and island difficulty can be adjusted. The finder always checks both the old world and the cape world.
 
 The code works in two iterations, a rough baseline filtering for rivers and then a fast seed refinement step. 
 
