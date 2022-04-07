@@ -148,13 +148,6 @@ wantedbaselineold = f(wantedbaselineold)
 wantedbaselinecape = f(wantedbaselinecape)
 
 
-
-
-for data in [unwanted, wantedold, wantedcape, unwantedbaseline, wantedbaselineold, wantedbaselinecape]:
-    data[:] = [s.upper() for s in data]
-
-
-
 pd.options.display.max_colwidth = 100
 pd.options.display.width  = 0
 pd.options.display.max_rows  = 100
