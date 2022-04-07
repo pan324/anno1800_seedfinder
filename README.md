@@ -51,7 +51,7 @@ The overall code flow for each world (e.g. old world, new world, cape) is as fol
 
 This is where the C code stops. Afterwards:
 
-10) Shuffle all pirates (do nothing) all pirate slots (id==4) and place the pirate on the first slot. Draw rotation.
+10) Shuffle all pirates (do nothing) and all pirate slots (id==4) and place the pirate on the first slot. Draw rotation.
 11) Append the unused pirate slots at the end of the NPC slots (id==3). 
 12) Shuffle all NPCs, but then sort so that Archibald Blake comes first. Cape has the same NPCs as the old world except Archibald Blake. 
 13) Shuffle all slots and place the NPCs on the first few slots. Draw rotation.
