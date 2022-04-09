@@ -8,18 +8,26 @@ Steps:
      Runtime is roughly 2000 seconds on a single core (but it uses all cores available).
 2) Refinement:
      This only checks seeds that passed the baseline.
-     Main focus is the selection of wanted islands.
+     Main focus is a scoring of the maps.
+     We define a score for each island and get the best seeds that match our requirement.
 
-Both steps essentially do the same under the hood and offer these filter settings:
+Both steps offer these filter settings:
     1) Unwanted islands. These may not appear.
     2) Wanted islands, old world. All of these islands must appear.
     3) Wanted islands, cape. All of these must appear too.
 
+However, refinement does not filter anything by default.
+Instead, it works by sorting the resulting seeds by score:
+    The score is the sum of island scores across old world and cape.
+    The finder will then give back the highest scoring islands.
+    You assign a score to each island based on personal preference
+    and the output is the best scoring map.
+    (Scoring is much slower than using filters, but should still take just a second.)
 
 Baseline is basically preprocessing and only happens once.
 Refinement is where you repeatedly change your requirements until you have just a handful of excellent seeds left.
 
-By default, the finder uses the first seed from the refinement and directly draws the map.
+By default, the finder uses the best seed from the refinement and directly draws the map.
 You can adjust the plotcount variable to show multiple seeds, and to either show them directly or to save to disk.
 
 
@@ -46,7 +54,6 @@ import matplotlib.pyplot as plt
 from util import Load, BinarizeWorld, BinarizeIslands, BinarizeWanted, CountDraws
 
 
-
 # General map settings:
 maptype     = "Corners"
 mapsize     = "Large"
@@ -54,20 +61,44 @@ islandsize  = "Large"
 difficulty  = "Normal"
 
 
-# Refinement settings:
+# Define scores for refinement for each island.
+# This is where you specify your personal island preference.
+# The values below are the influence costs of each island, as shown in the game
+# (I started a map, sailed to each island and checked the available influence afterwards).
+# But that is only a rough guideline. Surely there are better values:
+#   1) Each influence point actually corresponds to 1000 tiles, so the values are rather inaccurate.
+#   2) Are cliffs and harbor size accounted for?
+# The scores are handled as floating point values, so negative and fractional scores are allowed.
+# Unspecified islands have a score of 0.
+# E.g. I commented out all small islands so they have no impact on the score.
+# The finder does not consider all small islands, so it is better to ignore them.
+
+islandscores = {'L1':  36, 'L2':  34, 'L3':  32,
+                'L4':  39, 'L5':  34, 'L6':  36,
+                'L7':  35, 'L8':  35, 'L9':  33,
+                'L10': 36, 'L11': 35, 'L12': 37,
+                'L13': 37, 'L14': 34, 'CI':  33, 
+                'M1':  15, 'M2':  18, 'M3':  20,
+                'M4':  20, 'M5':  19, 'M6':  21,
+                'M7':  19, 'M8':  18, 'M9':  17,
+##                'S1':  4,  'S2':  6,  'S3':  6,
+##                'S4':  5,  'S5':  5,  'S6':  5,
+##                'S7':  4,  'S8':  4,  'S9':  4,
+##                'S10': 6,  'S11': 3,  'S12': 5,
+                }
+
+
+
 # Islands that appear only on normal difficulty: M7 M8 M9 L1 L6 L7 L9 L10 L12 L13
 # Islands that appear only on hard difficulty: M2R M4R M6R L3R L8R L9R L10R L14R
-# The islands that appear only on normal are really nice. We want them.
-# L14 is also pretty nice, though if we include everything we end up with no seeds at all.
-
-unwanted = "L2 L3 CI L8 L4 L5"
-wantedold = "M7 M8 M9 L1 L6 L7 L9 L10 L12 L13"
-wantedcape = "L1 L13"
 
 
 
 
-
+# Filtering is probably not needed for refinement.
+unwanted = ""
+wantedold = ""
+wantedcape = ""
 
 
 
@@ -160,7 +191,7 @@ oldworld, cape, allislands = Load(maptype, mapsize, islandsize, difficulty)
 # Or the garbage collector will delete their data before C even runs.
 roldworld, rcape = BinarizeWorld(oldworld), BinarizeWorld(cape)
 rislandsbaseline = [BinarizeIslands(islands, unwantedbaseline) for islands in allislands]
-rislands = [BinarizeIslands(islands, unwanted) for islands in allislands]
+rislands = [BinarizeIslands(islands, unwanted, islandscores) for islands in allislands]
 rwanted,rwantedcape = BinarizeWanted(allislands, wantedold), BinarizeWanted(allislands, wantedcape)
 rwantedbaseline, rwantedcapebaseline = BinarizeWanted(allislands, wantedbaselineold), BinarizeWanted(allislands, wantedbaselinecape)
 
@@ -179,13 +210,14 @@ def WantedArgs(wanted):
 fixedargsbaseline = [CountDraws(oldworld), CountDraws(cape),
                      *IslandArgs(rislandsbaseline),
                      *WorldArgs(*roldworld), *WorldArgs(*rcape),
-                     *WantedArgs(rwantedbaseline), *WantedArgs(rwantedcapebaseline)
+                     *WantedArgs(rwantedbaseline), *WantedArgs(rwantedcapebaseline),
                      ]
 
 fixedargs = [CountDraws(oldworld), CountDraws(cape),
              *IslandArgs(rislands),
              *WorldArgs(*roldworld), *WorldArgs(*rcape),
-             *WantedArgs(rwanted), *WantedArgs(rwantedcape)]
+             *WantedArgs(rwanted), *WantedArgs(rwantedcape),
+             ]
 
 
 
@@ -195,22 +227,23 @@ absdir = os.path.split(__file__)[0]
 dll = CDLL(absdir+"/src/findseed.dll")
 
 dll.find.restype = c_int32
-dll.find.argtypes = [c_uint32, c_uint32, c_uint32, c_uint32, c_uint32,
+dll.find.argtypes = [c_uint32, c_uint32, c_uint32, c_void_p,
+                     c_uint32, c_uint32,
                      c_void_p, c_uint32, c_void_p, c_uint32, c_void_p, c_uint32,
                      c_void_p, c_uint32, c_uint32, c_void_p, c_uint32, c_uint32,
-                     c_void_p, c_uint32, c_void_p, c_uint32
+                     c_void_p, c_uint32, c_void_p, c_uint32,
                      ]
 
 
 def Job(start, end, stepsize, queue, fixedargs = fixedargsbaseline, find=dll.find):
     """Worker task for the baseline. Feed the queue with good seeds."""
+    null = c_void_p(0)  # Baseline does no scoring.
     while start < end:
-        res = find(start, end, stepsize, *fixedargs)
+        res = find(start, end, stepsize, null, *fixedargs)
         queue.put(res)
         if res == -1:
             break
         start = res+stepsize
-
 
 
 
@@ -272,24 +305,25 @@ if __name__ == "__main__":
                 f.write(str(seed)+"\n")
         print("Baseline created.\n\n\n")
 
-
-
     print(f"Refinements, unwanted {unwanted}, wantedold {wantedold}, wantedcape {wantedcape}")
+    
     # Refine on one core in Python.
     seeds = []
+    score = np.zeros(1,dtype=np.float32)
+
     for i,seed in enumerate(open(baselinepath)):
         if not i: continue
         seed = int(seed)
-        seed = dll.find(seed, seed+1, 1, *fixedargs)
+        seed = dll.find(seed, seed+1, 1, score.ctypes.data, *fixedargs)
         if seed!=-1:
-            seeds.append(seed)
+            seeds.append((seed,score[0]))
 
     print("Number of seeds:",len(seeds))
-    print("First seeds:")
-    for seed in seeds[:writecount]:
-        print(seed)
-
-
+    seeds.sort(key=lambda x:-x[1])
+    print(f"{'Seed:':>11} score")
+    for seed,score in seeds[:writecount]:
+        print(f"{seed:10}: {score:g}")
+    seeds = [seed[0] for seed in seeds]
     
     if plotcount>0:
         for i,seed in enumerate(seeds):

@@ -6,6 +6,8 @@ The finder supports these filters:
 2) Wanted islands (old world). These islands must appear in the old world.
 3) Wanted islands (cape). These islands must appear in cape.
 
+Additionally, it will sort the results according to the sum of all island scores, where all island scores can be specified.
+
 The map type, map size, island size and island difficulty can be adjusted. The finder works in two iterations, a rough baseline filtering for rivers and then a fast seed refinement step. 
 
 1) The baseline filtering brute forces through all 2147483648 possible seeds to discard universally bad islands (e.g. with rivers). Results are saved to disk. Performance is roughly 1 million seeds per second per CPU core, which means comfortable 2.5 minutes runtime on a 5950X. Baselines for the largest maps are already shipped with the repository. (Although only Atoll, Corners, Arc are recommended because they have the most islands. Run util.py for more information.)
@@ -26,6 +28,8 @@ The results can be visualized. A map with islands and NPCs can be either shown d
 ## Notes 
 
 The finder can only filter through island selection. Things that cannot be filtered are: Island rotation; island position; fertilities; mining slots. 
+
+The finder does not perform the NPC selection part, which affects the placement of some small islands. It just does not consider them. So you should focus on medium and large islands. The visualizer does show all islands however.
 
 Fertilities and mining slots in particular are a fairly hard problem because they come at the end of island creation. To put things into perspective, the entire island+NPC placement and rotation is done with the first 70 random numbers from the Mersenne Twister. Then the game draws around 18000 more numbers before fertilities and mining slots are decided. There is a lot of additional game code to decipher and the filtering would be fairly slow even when using only the baseline seeds.
 

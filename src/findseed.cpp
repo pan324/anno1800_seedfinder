@@ -5,7 +5,7 @@
 
 #define Export   extern "C" __declspec( dllexport )
 
-// A small non-threadsafe interface for the mt.py code.
+// A small non-threadsafe interface for Python because neither random nor numpy match the expected RNG.
 static std::mt19937 mts;
 Export void seed(uint32_t seed) {
     mts.seed(seed);
@@ -35,13 +35,19 @@ struct Slot {
 
 struct Island {
     char id;
+    char picked;
     char unwanted;
     char rivershift;
-    char picked;
+    float score;
 };
 
 struct Wanted {
     // We want to check that islands[size][index].picked is true.
+    int16_t size;
+    int16_t index;
+};
+
+struct IslandSelection {
     int16_t size;
     int16_t index;
 };
@@ -148,7 +154,8 @@ struct Twister {
 int testregion(int seed, int ndraws,
                Island** islands0, Island** islands, int* sizes,
                Slot* world0, Slot* world, int normal, int n,
-               Wanted* wanted, int nwanted) {
+               Wanted* wanted, int nwanted, 
+               float* score) {
 
     // The first step is to stop as soon as a single unwanted island appears.
     // The second step comes only after all islands are picked. Then stop as soon as a wanted island does not appear.
@@ -237,9 +244,33 @@ int testregion(int seed, int ndraws,
     //        std::cout << i << "\n";
     //}
 
+
     // Success again! All wanted islands included.
+    // If we are not running the baseline, get the score of selected islands.
+    if (score) {
+        for (int sz = 0; sz < 3; sz++) {
+            for (int i = 0; i < sizes[sz]; i++) {
+                if (islands[sz][i].picked == 1) {
+                    *score += islands[sz][i].score;
+                }
+            }
+        }
+    }
     return 0;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -248,10 +279,10 @@ int testregion(int seed, int ndraws,
 // Each island says whether it is unwanted or not, and we stop as soon as one of them appears.
 // So if there is some large island without rivers that we really do not want, we can turn it unwanted too.
 // The search space (on normal difficulty) finds hits quite fast, so there is some room for filtering.
-Export int find(int start, uint32_t end, int stepsize, int ndraws, int ncapedraws,
+Export int find(int start, uint32_t end, int stepsize, float* score, 
+                int ndraws, int ncapedraws,
                 Island * small, int nsmall, Island * medium, int nmedium, Island * large, int nlarge,
-                Slot * oldworld, int normal, int n,
-                Slot * cape, int capnormal, int ncap,
+                Slot * oldworld, int normal, int n, Slot * cape, int capnormal, int ncap,
                 Wanted * wanted, int nwanted, Wanted* wantedcape, int nwantedcape) {
 
     // Merge the islands and sizes into one, in the order small, medium, large.
@@ -265,11 +296,12 @@ Export int find(int start, uint32_t end, int stepsize, int ndraws, int ncapedraw
 
     for (uint32_t seed = start; seed < end; seed += stepsize) {
         //std::cout << seed << "\n";
-        if (testregion(seed, ndraws, islands0, islands, sizes, oldworld, world, normal, n, wanted, nwanted)) continue;
-        if (testregion(seed, ndraws, islands0, islands, sizes, cape, world, capnormal, ncap, wantedcape, nwantedcape)) continue;
+        if (score) *score = 0.0;
+        if (testregion(seed, ndraws, islands0, islands, sizes, oldworld, world, normal, n, wanted, nwanted, score)) continue;
+        if (testregion(seed, ndraws, islands0, islands, sizes, cape, world, capnormal, ncap, wantedcape, nwantedcape, score)) continue;
 
 
-        // Good end. Return the seed.
+        // Good end. Return the seed and score.
         for (int i = 0; i < 3; i++) free(islands[i]);
         free(world);
         return seed;

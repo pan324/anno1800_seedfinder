@@ -299,18 +299,19 @@ def CountDraws(world):
     return draws
 
 
-def BinarizeIslands(islands, unwanted = []):
+def BinarizeIslands(islands, unwanted = [], scores={}):
     """Return an array of island structs for the C code.
 
     struct Island {
         char id;
+        char picked;
         char unwanted;
         char rivershift;
-        char picked;
+        float score;
     }; 
     """
-    rawislands = np.zeros(len(islands),dtype={"names":["id","unwanted","rivershift","picked"],
-                                              "formats":["i1","i1","i1","i1"]})
+    rawislands = np.zeros(len(islands),dtype={"names":["id","picked","unwanted","rivershift", "score"],
+                                              "formats":["i1","i1","i1","i1","f4"]})
     for i,(name,d) in enumerate(islands.iterrows()):
         rawislands[i]["id"] = d.id
         if name in unwanted:
@@ -321,7 +322,7 @@ def BinarizeIslands(islands, unwanted = []):
             try:
                 j = islands.index.get_loc(name.replace("R",""))
 
-                # Now figure out wher that counterpart is in relation to us.
+                # Now figure out where that counterpart is in relation to us.
                 # Assign that shift to our value. Assign the opposite value to the counterpart.
                 shift = j-i
                 rawislands[i]["rivershift"] = shift
@@ -331,6 +332,7 @@ def BinarizeIslands(islands, unwanted = []):
             
         # Has it been picked yet? Nope.
         rawislands[i]["picked"] = 0
+        rawislands[i]["score"] = scores.get(name,0)
 
 ##    return rawislands.ctypes.data, len(rawislands)  # Is garbage collected on return. Ouch.
     return rawislands
