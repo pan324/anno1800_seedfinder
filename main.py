@@ -344,7 +344,7 @@ if __name__ == "__main__":
     if plotcount>0:
         for i,seed in enumerate(seeds):
             if i==plotcount: break
-            Plot(seeds[0], oldworld, cape, allislands, oldworldnpcs, oldworldpirate)
+            Plot(seed, oldworld, cape, allislands, oldworldnpcs, oldworldpirate)
             plt.show()
 
     elif plotcount<0:
