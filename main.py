@@ -63,29 +63,40 @@ difficulty  = "Normal"
 
 # Define scores for refinement for each island.
 # This is where you specify your personal island preference.
-# The values below are the influence costs of each island, as shown in the game
-# (I started a map, sailed to each island and checked the available influence afterwards).
+# The values below are the land tiles of each island.
 # But that is only a rough guideline. Surely there are better values:
-#   1) Each influence point actually corresponds to 1000 tiles, so the values are rather inaccurate.
-#   2) Are cliffs and harbor size accounted for?
-# The scores are handled as floating point values, so negative and fractional scores are allowed.
+#   1) Harbor tiles can vary quite a bit (check the islandtiles folder).
+#   2) Squareness of the island and cliffs can influence the choice.
 # Unspecified islands have a score of 0.
-# E.g. I commented out all small islands so they have no impact on the score.
-# The finder does not consider all small islands, so it is better to ignore them.
+# So if we only care about the largest islands, we can comment out the rest.
+# This will find the best large islands, though medium islands may suffer.
+# Optimization on small islands is not recommended because the finder does not consider them all.
 
-islandscores = {'L1':  36, 'L2':  34, 'L3':  32,
-                'L4':  39, 'L5':  34, 'L6':  36,
-                'L7':  35, 'L8':  35, 'L9':  33,
-                'L10': 36, 'L11': 35, 'L12': 37,
-                'L13': 37, 'L14': 34, 'CI':  33, 
-                'M1':  15, 'M2':  18, 'M3':  20,
-                'M4':  20, 'M5':  19, 'M6':  21,
-                'M7':  19, 'M8':  18, 'M9':  17,
-##                'S1':  4,  'S2':  6,  'S3':  6,
-##                'S4':  5,  'S5':  5,  'S6':  5,
-##                'S7':  4,  'S8':  4,  'S9':  4,
-##                'S10': 6,  'S11': 3,  'S12': 5,
-                }
+scores = {'L1':  30572, 'L2':  27900, 'L3':  26692,
+          'L4':  31494, 'L5':  28871, 'L6':  30504,
+          'L7':  30217, 'L8':  28908, 'L9':  27467,
+          'L10': 30536, 'L11': 29672, 'L12': 30257,
+          'L13': 30337, 'L14': 29006, 'CI':  28406, 
+##          'M1':  11610, 'M2':  14195, 'M3':  15821,
+##          'M4':  16329, 'M5':  16236, 'M6':  16285,
+##          'M7':  15140, 'M8':  15576, 'M9':  13038,
+##          'S1':  2170,  'S2':  2918,  'S3':  3902,
+##          'S4':  2751,  'S5':  3666,  'S6':  3193,
+##          'S7':  2156,  'S8':  1734,  'S9':  2519,
+##          'S10': 3560,  'S11': 1831,  'S12': 3598,
+          }
+
+
+
+
+### Example of an alternative approach with pandas.
+### We directly work with the tiles.csv file but ignore small islands (going only from CI until M9).
+### We want watertiles to be worth just 10% as much as land tiles.
+### And tiles on medium islands shall be worth only 50% compared to large islands.
+##scores = pd.read_csv("islandtiles/tiles.csv",index_col=0).loc["CI":"M9"]
+##scores = scores.landtiles + 0.1 * scores.watertiles
+##scores.loc["M1":"M9"] *= 0.5
+
 
 
 
@@ -191,7 +202,7 @@ oldworld, cape, allislands = Load(maptype, mapsize, islandsize, difficulty)
 # Or the garbage collector will delete their data before C even runs.
 roldworld, rcape = BinarizeWorld(oldworld), BinarizeWorld(cape)
 rislandsbaseline = [BinarizeIslands(islands, unwantedbaseline) for islands in allislands]
-rislands = [BinarizeIslands(islands, unwanted, islandscores) for islands in allislands]
+rislands = [BinarizeIslands(islands, unwanted, scores) for islands in allislands]
 rwanted,rwantedcape = BinarizeWanted(allislands, wantedold), BinarizeWanted(allislands, wantedcape)
 rwantedbaseline, rwantedcapebaseline = BinarizeWanted(allislands, wantedbaselineold), BinarizeWanted(allislands, wantedbaselinecape)
 
@@ -245,7 +256,12 @@ def Job(start, end, stepsize, queue, fixedargs = fixedargsbaseline, find=dll.fin
             break
         start = res+stepsize
 
-
+def Score(seed):
+    """Get the score for an accepted seed."""
+    score = np.zeros(1,dtype=np.float32)
+    seed = dll.find(seed, seed+1, 1, score.ctypes.data, *fixedargs)
+    return score[0]
+    
 
 
 
