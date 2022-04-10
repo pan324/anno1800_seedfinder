@@ -6,7 +6,7 @@ The finder supports these filters:
 2) Wanted islands (old world). These islands must appear in the old world.
 3) Wanted islands (cape). These islands must appear in cape.
 
-Additionally, it will sort the results according to the sum of all island scores, where all island scores can be specified.
+Additionally, it will sort the results according to the sum of all island scores, where all island scores can be specified. The default score is the number of land tiles of all large islands.
 
 The map type, map size, island size and island difficulty can be adjusted. The finder works in two iterations, a rough baseline filtering for rivers and then a fast seed refinement step. 
 
