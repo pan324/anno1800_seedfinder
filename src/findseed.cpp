@@ -29,8 +29,9 @@ Export uint32_t mti() {
 
 
 struct Slot {
-    int16_t size;
-    int16_t id;
+    char size;
+    char id;  // This is the id used for matching islands. Shifted and replaced for id==3 and id==4.
+    int16_t actualid;  // This is the original id.
 };
 
 struct Island {
@@ -51,6 +52,15 @@ struct IslandSelection {
     int16_t size;
     int16_t index;
 };
+
+struct World {
+    Slot* slots;
+    int starter;
+    int npc;
+    int pirate;
+    int n;
+};
+
 
 
 
@@ -137,7 +147,7 @@ struct Twister {
         uint32_t i;
         Slot* cur;
         for (cur = start + 1, i = 1; cur < end; cur += 1, i += 1) {
-            j = draw() % (i + 1);
+            j = randint(i + 1);
             if (j != i) {
                 tmp = *cur;
                 *cur = start[j];
@@ -145,43 +155,19 @@ struct Twister {
             }
         }
     }
+
+    // Like shuffle but only advances the RNG without affecting the inputs.
+    void fakeshuffle(int size) {
+        for (int i = 1; i < size; i++)
+            randint(i + 1);
+    }
 };
 
-
-
-// Test a single region (either old world or cape). Return 0 on success, else 1.
-// No unwanted island may appear and all wanted islands must appear.
-int testregion(int seed, int ndraws,
-               Island** islands0, Island** islands, int* sizes,
-               Slot* world0, Slot* world, int normal, int n,
-               Wanted* wanted, int nwanted, 
-               float* score) {
-
-    // The first step is to stop as soon as a single unwanted island appears.
-    // The second step comes only after all islands are picked. Then stop as soon as a wanted island does not appear.
-
-
-    // Set up a small buffer of ndraws.
-    Twister mt;
-    mt.set(seed, ndraws + 3);
-
-    // Make a copy of the original data because of picking islands and world shuffling.
-    for (int i = 0; i < 3; i++) {
-        memcpy(islands[i], islands0[i], sizes[i] * sizeof(Island));
-    }
-    memcpy(world, world0, n * sizeof(Slot));
-
-    // Shuffle the starters. Then everything.
-    mt.shuffle(world + normal, world + n);
-    mt.shuffle(world, world + n);
-    // Now stable sort or rather partition.
-    std::stable_partition(world, world + n, [](Slot slot) {return slot.id == 2; });
-
-
-    // Go over each slot and find a suitable island.
-    for (int i = 0; i < n; i++) {
+// Fill all slots, each with a suitable island.
+int fillslots(Slot* slots, int nslots, Island** islands, int* sizes, Twister* mt) {
+    for (int i = 0; i < nslots; i++) {
         // Count how many islands match the slot.id.
-        auto slot = world[i];
+        auto slot = slots[i];
         int sz = slot.size;
         //std::cout << "Slot: " << i << ", Slotsize: " << sz << "\n";
         auto& islandsz = islands[sz];
@@ -198,7 +184,7 @@ int testregion(int seed, int ndraws,
         }
         //std::cout << "Candidates: " << count << "\n";
         // Draw a random number.
-        int choice = mt.randint(count);
+        int choice = mt->randint(count);
         //std::cout << "Choice: " << choice << "\n";
         // Now inform the island that it is taken.
         // Also inform the river neighbor if necessary.
@@ -225,11 +211,85 @@ int testregion(int seed, int ndraws,
             count += 1;
         }
         // Draw the rotation!
-        mt.randint(4);
+        mt->randint(4);
     }
+    return 0;  // Success! No unwanted islands placed.
+}
 
-    // Success! No unwanted islands from here!
-    // 
+
+// Test a single region (either old world or cape). Return 0 on success, else 1.
+// No unwanted island may appear and all wanted islands must appear.
+int testregion(int seed, int ndraws, int npcs, int pirates,
+    Island** islands0, Island** islands, int* sizes,
+    World world, Slot* slots,
+    Wanted* wanted, int nwanted,
+    float* score) {
+
+    // The first step is to stop as soon as a single unwanted island appears.
+    // The second step comes only after all islands are picked. Then stop as soon as a wanted island does not appear.
+
+    // Set up a small buffer of ndraws.
+    Twister mt;
+    mt.set(seed, ndraws + 3);
+
+    // Make a copy of the original data because of picking islands and world shuffling.
+    for (int i = 0; i < 3; i++) {
+        memcpy(islands[i], islands0[i], sizes[i] * sizeof(Island));
+    }
+    memcpy(slots, world.slots, world.n * sizeof(Slot));
+
+    // Shuffle the starters. Then starters and normals.
+    mt.shuffle(slots + world.starter, slots + world.npc);
+    mt.shuffle(slots, slots + world.npc);
+    // Now stable sort or rather partition so that id==2 comes first.
+    std::stable_partition(slots, slots + world.npc, [](Slot slot) {return slot.actualid == 1; });
+
+    int normalstarters = world.npc;
+    int res = fillslots(slots, normalstarters, islands, sizes, &mt);
+    if (res) return res;  // Bad end.
+
+    // Success! No unwanted islands so far!
+    // But we still need to place NPCs and pirates.
+    mt.fakeshuffle(pirates);
+    mt.shuffle(slots + world.pirate, slots + world.n);
+
+    // Now place the pirate(s) on the first slots.
+    // We place as many pirates as we can until slots run out.
+    int piratesplaced = std::min(world.n - world.pirate, pirates);
+
+    // The first pirate slot(s) are now taken.
+    // We emulate this by moving the untaken pirate slots to the left by the same amount.
+    // This way we get a contiguous array of slots.
+    // But first, draw rotation.
+    for (int i = 0; i < piratesplaced; i++)
+        mt.randint(4);
+
+    // Pirate slots available after pirate selection:
+    int pirateslots = world.n - world.pirate - piratesplaced;
+    memmove(slots + world.pirate, slots + world.pirate + piratesplaced, pirateslots * sizeof(Slot));
+
+    // NPCs:
+    mt.fakeshuffle(npcs);
+    int npcslots = world.pirate - world.npc + pirateslots;  // The slots that NPCs can choose from.
+    mt.shuffle(slots + world.npc, slots + world.npc + npcslots);
+
+    int npcsplaced = std::min(npcslots, npcs);
+    // Draw rotation.
+    for (int i = 0; i < npcsplaced; i++)
+        mt.randint(4);
+
+    // This time around we do not even need to move them but can just shift our starting point.
+    Slot* start = slots + world.npc + npcsplaced;
+    int size = npcslots - npcsplaced;
+
+    mt.shuffle(start, start+size);
+    std::stable_partition(start, start+size, [](Slot slot) {return slot.actualid == 3; });
+    res = fillslots(start, size, islands, sizes, &mt);
+    if (res) return res;  // Bad end.
+    // NPCs done. All islands placed.
+
+
+
     // But are all wanted islands included?
     for (int i = 0; i < nwanted; i++) {
         //std::cout << "Check wanted" << i << "\n";
@@ -267,49 +327,49 @@ int testregion(int seed, int ndraws,
 
 
 
-
-
-
-
-
-
-
-
 // Go through seeds from start to end and return the first seed that works.
 // Each island says whether it is unwanted or not, and we stop as soon as one of them appears.
 // So if there is some large island without rivers that we really do not want, we can turn it unwanted too.
 // The search space (on normal difficulty) finds hits quite fast, so there is some room for filtering.
-Export int find(int start, uint32_t end, int stepsize, float* score, 
-                int ndraws, int ncapedraws,
-                Island * small, int nsmall, Island * medium, int nmedium, Island * large, int nlarge,
-                Slot * oldworld, int normal, int n, Slot * cape, int capnormal, int ncap,
-                Wanted * wanted, int nwanted, Wanted* wantedcape, int nwantedcape) {
+Export int find(int start, uint32_t end, int stepsize, float* score,
+    int ndraws, int ncapedraws,
+    int npcs, int pirate,
+    Island* small, int nsmall, Island* medium, int nmedium, Island* large, int nlarge,
+    //World old,  // No idea why this fails.
+    //World cape,
+    Slot* slotsold, int a, int b, int c, int d, 
+    Slot* slotcape, int e, int f, int g, int h,
+    Wanted* wanted, int nwanted, Wanted* wantedcape, int nwantedcape) {
+
+    World old{ slotsold, a,b,c,d };
+    World cape{ slotcape, e,f,g,h};
+
 
     // Merge the islands and sizes into one, in the order small, medium, large.
-    // Allocate memory to keep a copy of worlds and islands.
+    // Allocate memory to keep a copy of slots and islands.
     Island* islands0[]{ small, medium, large };
     Island* islands[3];
     int sizes[]{ nsmall, nmedium, nlarge };
     for (int i = 0; i < 3; i++)
         islands[i] = (Island*)malloc(sizes[i] * sizeof(Island));
-    Slot* world = (Slot*)malloc(std::max(n, ncap) * sizeof(Slot*));
+    Slot* slots = (Slot*)malloc(std::max(old.n, cape.n) * sizeof(Slot*));
 
     for (uint32_t seed = start; seed < end; seed += stepsize) {
         //std::cout << seed << "\n";
         if (score) *score = 0.0;
-        if (testregion(seed, ndraws, islands0, islands, sizes, oldworld, world, normal, n, wanted, nwanted, score)) continue;
-        if (testregion(seed, ndraws, islands0, islands, sizes, cape, world, capnormal, ncap, wantedcape, nwantedcape, score)) continue;
+        if (testregion(seed, ndraws, npcs + 1, pirate, islands0, islands, sizes, old, slots, wanted, nwanted, score)) continue;
+        if (testregion(seed, ncapedraws, npcs, pirate, islands0, islands, sizes, cape, slots, wantedcape, nwantedcape, score)) continue;
 
 
         // Good end. Return the seed and score.
         for (int i = 0; i < 3; i++) free(islands[i]);
-        free(world);
+        free(slots);
         return seed;
 
     }
 
     for (int i = 0; i < 3; i++) free(islands[i]);
-    free(world);
+    free(slots);
     return -1;
 }
 

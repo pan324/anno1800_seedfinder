@@ -285,22 +285,42 @@ def Map(seed, world, allislands, npccount, piratecount, hasblake = True, verbose
 #   It then runs along that range and returns a seed as soon as it finds one.
 #   Python can then print/save the seed and restart the job from the current position as needed.
 
-def CountDraws(world):
+def CountDraws(world, npcs, pirates):
     """Return the number of RNG draws for the world.
     This is needed to speed up the C code."""
     slots = world
     starters = slots[slots.id==1]
     normals = slots[(slots.id==0) & slots.type==1]
+    npcslots = slots[slots.id==3]
+    pirateslots = slots[slots.id==4]
+    
+    def shuffle(n):
+        return max(0,n-1)
     
     # The first shuffle takes the starters only.
     # The second takes both.
     # Each shuffle draws one number fewer than there are items.
-    draws = len(starters)-1
-    draws+= len(starters)+len(normals)-1
+    draws = shuffle(len(starters))
+    draws+= shuffle(len(starters)+len(normals))
 
     # Now place the islands around the map.
     # Each slot draws two randints, one for island and one for rotation.
     draws += 2 * (len(starters)+len(normals))
+
+    # Pirates.
+    draws += shuffle(pirates)
+    draws += shuffle(len(pirateslots))
+    draws += pirates  # Rotate.
+
+    # NPCs.
+    draws += shuffle(npcs)
+    draws += shuffle(len(npcslots)+len(pirateslots)-pirates)  # Shuffle NPC + unused pirate slots.
+    draws += npcs  # Rotate.
+
+    # Now shuffle the rest and then place small islands.
+    rest = max(0,len(npcslots)+len(pirateslots) - npcs - pirates)
+    draws += shuffle(rest)
+    draws += 2*rest
     return draws
 
 
@@ -343,28 +363,40 @@ def BinarizeIslands(islands, unwanted = [], scores={}):
     return rawislands
 
 def BinarizeWorld(world):
-    """Return an array with normal/starter slots for the C code.
-    Also return the length of the normal section, i.e. the offset of the starter.
+    """Return an array with slots for the C code.
+    It is a single array with multiple sections, in this order:
+        normal, starter, npc, pirate
+    (So essentially the order of ids, except no decoration islands.)
+    The game first draws from normal/starter and then from npc/pirate,
+    so it is good to have everything in one spot.
+
+    Return the array and the offset of each section.
     struct Slot {
-        int16_t size;
-        int16_t id;
+        char size;
+        char id;  // This is the id used for matching islands. Shifted and replaced for id==3 and id==4.
+        int16_t actualid;  // This is the original id.
     };
     """
     slots = world
     normal = slots[(slots.id==0) & slots.type==1]
     starter = slots[slots.id==1]
-    rawarrays = []
-    for array in (normal, starter):
-        rawarray = np.zeros(len(array), dtype="u2, u2")
-        for i,(_,d) in enumerate(array.iterrows()):
-            rawarray[i] = (d.sz, 1<<d.id)
-        rawarrays.append(rawarray)
+    npc = slots[slots.id==3]
+    pirate = slots[slots.id==4]
 
-    # We can already concatenate the normal+starter data.
+    offsets = [0]
+    rawarrays = []
+    for array in (normal, starter, npc, pirate):
+        rawarray = np.zeros(len(array), dtype="u1, u1, u2")
+        for i,(_,d) in enumerate(array.iterrows()):
+            did = 0 if d.id in (3,4) else d.id
+            rawarray[i] = (d.sz, 1<<did, d.id)
+        rawarrays.append(rawarray)
+        offsets.append(offsets[-1] + len(array))
+
+    # Put everything into a single array.
     # Afterwards we just tell the shuffler which part of that data to shuffle.
     rawworld = np.concatenate(rawarrays)
-
-    return rawworld, len(normal)
+    return rawworld, offsets[1:]
 
 
 

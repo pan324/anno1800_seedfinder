@@ -29,8 +29,6 @@ The results can be visualized. A map with islands and NPCs can be either shown d
 
 The finder can only filter through island selection. Things that cannot be filtered are: Island rotation; island position; fertilities; mining slots. 
 
-The finder does not perform the NPC selection part, which affects the placement of some small islands. It just does not consider them. So you should focus on medium and large islands. The visualizer does show all islands however.
-
 Fertilities and mining slots in particular are a fairly hard problem because they come at the end of island creation. To put things into perspective, the entire island+NPC placement and rotation is done with the first 70 random numbers from the Mersenne Twister. Then the game draws around 18000 more numbers before fertilities and mining slots are decided. There is a lot of additional game code to decipher and the filtering would be fairly slow even when using only the baseline seeds.
 
 If you want to run the retrieval scripts yourself (copypics.py, maptemplatestocsv.py, maptocsv.py), they expect that the repository has two neighboring folders, one for the FileDBReader and one for all game assets as extracted with the RDAExplorer. I.e. the folders ../FileDBReader and ../data should exist.
@@ -53,13 +51,11 @@ The overall code flow for each world (e.g. old world, new world, cape) is as fol
     3) Create a list of compatible islands. To be compatible, the island id must be compatible with the slot id (island.id & slot.id) and the island region must be compatible with the region of the world and the island difficulty must be compatible with the user setting and the island gamemode must be compatible with the user setting. (All checks except id can be pushed far out of the loop but that is not how the game does it.)
     4) Randomly select one island for this slot (std::uniform_int_distribution). Randomly select a rotation (values from 0 to 3, 90 degrees each, std::uniform_int_distribution). Remove the island and its nonriver/river variant from available islands for this world.
 
-This is where the C code stops. Afterwards:
-
 10) Shuffle all pirates (do nothing) and all pirate slots (id==4) and place the pirate on the first slot. Draw rotation.
 11) Append the unused pirate slots at the end of the NPC slots (id==3). 
 12) Shuffle all NPCs, but then sort so that Archibald Blake comes first. Cape has the same NPCs as the old world except Archibald Blake. 
-13) Shuffle all slots and place the NPCs on the first few slots. Draw rotation.
-14) Shuffle the all unused slots so far and treat them like normal slots (id=0). Then do step 9) with them. 
+13) Shuffle all slots and place the NPCs on the first few slots. Draw rotations.
+14) Shuffle the all unused slots so far, sort them so that id==3 comes first, and treat them like normal slots (id=0). Then do step 9) with them. 
 
 The cape world also shuffles the old world NPCs (but without Archibald Blake) but there are no NPC slots at all, so island placement is not affected. I think fertilities and mine slots in cape will be different depending on whether you have selected both old world NPCs or not. (The shuffle does not draw random numbers if there are fewer than 2 items to shuffle, so 0 NPCs and 1 NPC both do not advance the RNG.)
 

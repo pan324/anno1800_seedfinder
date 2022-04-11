@@ -61,6 +61,11 @@ islandsize  = "Large"
 difficulty  = "Normal"
 
 
+# These settings affect some small islands only.
+oldworldnpcs   = 2    # Does not include Archibald and pirate.
+oldworldpirate = 1    # 0 or 1.
+
+
 # Define scores for refinement for each island.
 # This is where you specify your personal island preference.
 # The values below are the land tiles of each island.
@@ -70,7 +75,6 @@ difficulty  = "Normal"
 # Unspecified islands have a score of 0.
 # So if we only care about the largest islands, we can comment out the rest.
 # This will find the best large islands, though medium islands may suffer.
-# Optimization on small islands is not recommended because the finder does not consider them all.
 
 scores = {'L1':  30572, 'L2':  27900, 'L3':  26692,
           'L4':  31494, 'L5':  28871, 'L6':  30504,
@@ -90,14 +94,14 @@ scores = {'L1':  30572, 'L2':  27900, 'L3':  26692,
 
 
 ### Example of an alternative approach with pandas.
-### We directly work with the tiles.csv file but ignore small islands (going only from CI until M9).
-### We want watertiles to be worth just 10% as much as land tiles.
-### And tiles on medium islands shall be worth only 50% compared to large islands.
-##scores = pd.read_csv("islandtiles/tiles.csv",index_col=0).loc["CI":"M9"]
-##scores = scores.landtiles + 0.1 * scores.watertiles
-##scores.loc["M1":"M9"] *= 0.5
-
-
+### We directly work with the tiles.csv file.
+### Tiles on medium islands shall be worth only 50% compared to large islands.
+### Tiles on small islands shall be worth only 20%.
+### This way we large islands become almost as large as possible without sacrificing overall area.
+##scores = pd.read_csv("islandtiles/tiles.csv",index_col=0)
+##scores = scores.landtiles #+ 0.1 * scores.watertiles
+##scores.loc["M1":"M9"] *= 0.3
+##scores.loc["S1":"S12"] *= 0.1
 
 
 # Islands that appear only on normal difficulty: M7 M8 M9 L1 L6 L7 L9 L10 L12 L13
@@ -114,6 +118,7 @@ wantedcape = ""
 
 
 
+
 # Various output settings:
 writecount = 15  # Only print the first ... seeds.
 plotcount = 1
@@ -123,23 +128,6 @@ plotcount = 1
 #   plotcount = -10  =>  Visualize 10 seeds and save them only.
 
 
-
-# Not used for baseline or refinement. Only for the visualizer:
-oldworldnpcs   = 2    # Does not include Archibald and pirate.
-oldworldpirate = 1    # 0 or 1.
-
-
-
-
-
-# Finder limitations:
-#    Small island settings might not always work.
-#    (Because some small islands are placed after NPCs,
-#    and the NPC part is only implemented by the visualizer, not the finder.)
-#
-# Visualizer limitations:
-#    The game slightly moves islands around from their original position.
-#    And it occasionally rotates them.
 
 
 
@@ -198,6 +186,7 @@ pd.options.display.max_rows  = 100
 oldworld, cape, allislands = Load(maptype, mapsize, islandsize, difficulty)
 
 
+
 # Do NOT substitute these variables into where they are used.
 # Or the garbage collector will delete their data before C even runs.
 roldworld, rcape = BinarizeWorld(oldworld), BinarizeWorld(cape)
@@ -212,37 +201,49 @@ def IslandArgs(allislands):
     for islands in allislands:
         rv += [islands.ctypes.data, len(islands)]
     return rv
-def WorldArgs(world, normlen):
-    return world.ctypes.data, normlen, len(world)
+def WorldArgs(world, offsets):
+    assert len(offsets)==4, "There should be one offset for starter,npc,pirate,end section."
+    return world.ctypes.data, *offsets
 def WantedArgs(wanted):
     return wanted.ctypes.data, len(wanted)
 
+from util import Map
+res = Map(1234, oldworld, allislands, oldworldnpcs, oldworldpirate)
+
+
+olddraws = CountDraws(oldworld, oldworldnpcs+1, oldworldpirate)
+capedraws = CountDraws(cape, oldworldnpcs, oldworldpirate) 
+
+
 # Push all the constant data into an easy to use argument.
-fixedargsbaseline = [CountDraws(oldworld), CountDraws(cape),
+fixedargsbaseline = [olddraws, capedraws,
+                     oldworldnpcs, oldworldpirate, 
                      *IslandArgs(rislandsbaseline),
-                     *WorldArgs(*roldworld), *WorldArgs(*rcape),
+                     *WorldArgs(*roldworld),
+                     *WorldArgs(*rcape),
                      *WantedArgs(rwantedbaseline), *WantedArgs(rwantedcapebaseline),
                      ]
 
-fixedargs = [CountDraws(oldworld), CountDraws(cape),
+fixedargs = [olddraws, capedraws,
+             oldworldnpcs, oldworldpirate, 
              *IslandArgs(rislands),
-             *WorldArgs(*roldworld), *WorldArgs(*rcape),
+             *WorldArgs(*roldworld),
+             *WorldArgs(*rcape),
              *WantedArgs(rwanted), *WantedArgs(rwantedcape),
              ]
-
-
-
 
 
 absdir = os.path.split(__file__)[0]
 dll = CDLL(absdir+"/src/findseed.dll")
 
 dll.find.restype = c_int32
-dll.find.argtypes = [c_uint32, c_uint32, c_uint32, c_void_p,
-                     c_uint32, c_uint32,
-                     c_void_p, c_uint32, c_void_p, c_uint32, c_void_p, c_uint32,
-                     c_void_p, c_uint32, c_uint32, c_void_p, c_uint32, c_uint32,
-                     c_void_p, c_uint32, c_void_p, c_uint32,
+dll.find.argtypes = [c_uint32, c_uint32, c_uint32, c_void_p,  # Seed to test, scores.
+                     c_uint32, c_uint32,  # Draw counts.
+                     c_uint32, c_uint32,  # NPC, pirate count.
+                     c_void_p, c_uint32, c_void_p, c_uint32, c_void_p, c_uint32,  # Islands.
+                     c_void_p, c_uint32, c_uint32, c_uint32, c_uint32,  # Old world.
+                     c_void_p, c_uint32, c_uint32, c_uint32, c_uint32,  # Cape world.
+                     c_void_p, c_uint32, c_void_p, c_uint32,  # Wanted.
                      ]
 
 
@@ -261,8 +262,6 @@ def Score(seed):
     score = np.zeros(1,dtype=np.float32)
     seed = dll.find(seed, seed+1, 1, score.ctypes.data, *fixedargs)
     return score[0]
-    
-
 
 
 if __name__ == "__main__":
