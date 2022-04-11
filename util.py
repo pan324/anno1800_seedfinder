@@ -16,13 +16,18 @@ SIZES = ["Small","Medium","Large"]
 DIFFS = {"Normal": 1,
          "Hard":   2}
 REGIONS = {"-":        1, 
-           "moderate": 2,
-           "newworld": 4,
-           "arctic":   8,
-           "enbesa":  16}
-GAMEMODES = {"sp":       1,
-             "mp":       2,
-             "campaign": 4}
+           "Moderate": 2,
+           "Colony01": 4,
+           "Arctic":   8,
+           "Africa":  16}
+GAMEMODES = {"SandboxSingleplayer": 1,
+             "SandboxMultilayer": 2,
+             "CampaignMode": 4}
+ISLAND_TYPE = {"Normal": 1,
+               "Starter": 2,
+               "Decoration": 4,
+               "ThirdParty": 8,
+               "PirateIsland": 16}
 
 
 
@@ -64,9 +69,9 @@ def LoadIslands(difficulty):
     # Select the relevant islands only.
     # Turn the short name into the index and make sure it is unique.
     for islands in allislands:
-        islands.drop(islands.index[~(islands.region & REGIONS["moderate"]).astype(bool)],inplace=True)
+        islands.drop(islands.index[~(islands.region & REGIONS["Moderate"]).astype(bool)],inplace=True)
         islands.drop(islands.index[~(islands["diff"] & DIFFS[difficulty]).astype(bool)],inplace=True)
-        islands.drop(islands.index[~(islands.gamemode & GAMEMODES["sp"]).astype(bool)],inplace=True)
+        islands.drop(islands.index[~(islands.gamemode & GAMEMODES["SandboxSingleplayer"]).astype(bool)],inplace=True)
         islands.set_index("shortname",inplace=True)
         assert islands.index.nunique() == len(islands), "Short name is not unique."
     return allislands
