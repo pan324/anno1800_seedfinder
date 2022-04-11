@@ -50,7 +50,6 @@ The overall code flow for each world (e.g. old world, new world, cape) is as fol
     2) Get islands with the same size as the slot.
     3) Create a list of compatible islands. To be compatible, the island id must be compatible with the slot id (island.id & slot.id) and the island region must be compatible with the region of the world and the island difficulty must be compatible with the user setting and the island gamemode must be compatible with the user setting. (All checks except id can be pushed far out of the loop but that is not how the game does it.)
     4) Randomly select one island for this slot (std::uniform_int_distribution). Randomly select a rotation (values from 0 to 3, 90 degrees each, std::uniform_int_distribution). Remove the island and its nonriver/river variant from available islands for this world.
-
 10) Shuffle all pirates (do nothing) and all pirate slots (id==4) and place the pirate on the first slot. Draw rotation.
 11) Append the unused pirate slots at the end of the NPC slots (id==3). 
 12) Shuffle all NPCs, but then sort so that Archibald Blake comes first. Cape has the same NPCs as the old world except Archibald Blake. 
