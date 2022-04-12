@@ -207,9 +207,6 @@ def WorldArgs(world, offsets):
 def WantedArgs(wanted):
     return wanted.ctypes.data, len(wanted)
 
-from util import Map
-res = Map(1234, oldworld, allislands, oldworldnpcs, oldworldpirate)
-
 
 olddraws = CountDraws(oldworld, oldworldnpcs+1, oldworldpirate)
 capedraws = CountDraws(cape, oldworldnpcs, oldworldpirate) 
