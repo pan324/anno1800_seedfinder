@@ -17,13 +17,14 @@ The results can be visualized. A map with islands and NPCs can be either shown d
 
 ## Example
 
-A search on Corners large/large/normal yields the following seeds. I have used three different scorings, all based on land tiles. Score "L" is the default and considers large islands only. Score "LM" considers all land tiles of large and medium islands. Score "LMS" includes small islands as well (and assumes all NPCs and pirates). The first seed has the optimal L score, the second seed has the optimal LM score, and the third seed has the optimal LMS score. 1384368905 offers around 2000 more tiles on large islands only but ends with 5000 fewer tiles overall. Still a very solid choice if one just wants to have a good time with large islands.
+A search on Corners large/large/normal yields the following seeds. I have used three different scorings, all based on land tiles. Score "L" is the default and considers large islands only. Score "LM" considers all land tiles of large and medium islands. Score "LMS" includes small islands as well (and assumes all NPCs and pirates). The first seed has the optimal L score, the second seed has the optimal LM score, and the third seed has the optimal LMS score. The last seed 975 is a typically used seed, however the numbers here are overestimated because river tiles are not subtracted. We can see that 975 misses out on around 20k tiles, which is about halfway between a medium and large island. The optimized choices are all very similar with just minor variations. 1384368905 offers around 2000 more tiles on large islands only but ends with 5000 fewer tiles overall. Still a very solid choice if one just wants to have a good time with large islands. 
 
 | Seed | L | LM | LMS |
 | --- | --- | --- | --- |
 | 1384368905 | 335992 | 471848 | 509801 |
 | 1636799193 | 333327 | 475675 | 512269 |
 | 1423628354 | 333762 | 474048 | 514571 |
+| 975        | 329692 | 452268 | 490117 |
 
 
 ## Installation
