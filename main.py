@@ -59,6 +59,7 @@ maptype     = "Corners"
 mapsize     = "Large"
 islandsize  = "Large"
 difficulty  = "Normal"
+gamemode    = "SandboxSingleplayer"
 
 
 # These settings affect some small islands only.
@@ -100,8 +101,8 @@ scores = {'L1':  30572, 'L2':  27900, 'L3':  26692,
 ### This way we large islands become almost as large as possible without sacrificing overall area.
 ##scores = pd.read_csv("islandtiles/tiles.csv",index_col=0)
 ##scores = scores.landtiles #+ 0.1 * scores.watertiles
-##scores.loc["M1":"M9"] *= 0.3
-##scores.loc["S1":"S12"] *= 0.1
+##scores.loc["M1":"M9"] *= 0.5
+##scores.loc["S1":"S12"] *= 0.2
 
 
 # Islands that appear only on normal difficulty: M7 M8 M9 L1 L6 L7 L9 L10 L12 L13
@@ -140,11 +141,17 @@ unwantedbaseline = "M1R M2R M3R M4R M5R M6R M7R M8R M9R CIR L1R L2R L3R L4R L5R 
 wantedbaselineold = ""
 wantedbaselinecape = ""
 
-### Snowflake Large Large Normal needs some finetuning already to keep the seeds down.
-##wantedbaselineold += "L1 L6"
-##unwantedbaseline  += "CI L8"
+### Snowflake needs some finetuning already to keep the seeds down.
+if (maptype, mapsize, islandsize, difficulty) == ("Snowflake", "Large", "Large","Normal"):
+    wantedbaselineold += "L1 L6"
+    unwantedbaseline  += "CI L8"
 
 # Smaller maps will be even worse.
+
+
+# Campaign:
+if gamemode == "CampaignMode":
+    unwantedbaseline += " L3 L5 M1"
 
 
 
@@ -183,7 +190,7 @@ pd.options.display.width  = 0
 pd.options.display.max_rows  = 100
 
 
-oldworld, cape, allislands = Load(maptype, mapsize, islandsize, difficulty)
+oldworld, cape, allislands = Load(maptype, mapsize, islandsize, difficulty, gamemode)
 
 
 
@@ -262,7 +269,7 @@ def Score(seed):
 
 
 if __name__ == "__main__":
-    setting = f"{maptype}_{mapsize}_{islandsize}_{difficulty}"
+    setting = f"{maptype}_{mapsize}_{islandsize}_{difficulty}_{gamemode}"
     baselinepath = f"seeds/{setting}.txt"
 
     try: os.mkdir("seeds")

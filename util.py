@@ -40,28 +40,37 @@ OTHER_PATHS = {"cape":      ["maps/moderate_c_01.csv"],
 
 
 
-def Load(maptype, mapsize, islandsize, difficulty):
+def Load(maptype, mapsize, islandsize, difficulty, gamemode):
     """Load oldworld, cape and all relevant islands."""
     assert maptype in MAPTYPES, f"Maptype must be one of {MAPTYPES}"
     assert mapsize in SIZES, f"Mapsize must be one of: {SIZES}"
     assert islandsize in SIZES, f"Islandsize must be one of: {SIZES}"
     assert difficulty in DIFFS, f"Difficulty must be one of: {list(DIFFS.keys())}"
+    assert gamemode in GAMEMODES, f"Gamemode must be one of: {list(GAMEMODES.keys())}"
 
+    iscampaign = gamemode == "CampaignMode"
 
     templates = pd.read_csv("templates/templates.csv")
-    templates = templates[(templates.IslandSize == islandsize) & (templates.TemplateSize == mapsize)
-                         & templates.IsUsedByMapGenerator & (templates.TemplateMapType == maptype)]
+    templates.fillna("", inplace=True)  # Turn blank strings to "" instead of nan floats.
+    
+    templates = templates[templates.IslandSize.apply(lambda x: islandsize in x.split(";")) &
+                          templates.TemplateSize.apply(lambda x: mapsize in x.split(";")) &
+                          templates.TemplateMapType.apply(lambda x: maptype in x.split(";")) &
+                          templates.IsUsedByMapGenerator &
+                          (templates.Campaign == iscampaign)
+                          ]
+    
     oldpaths = ["maps/"+path.split("/")[-2]+".csv" for path in templates.TemplateFilename]
 
-
-    assert len(oldpaths)==1, "The code cannot handle multiple templates."
+    assert not len(oldpaths)>1, "The code cannot handle multiple templates."
+    assert not len(oldpaths)<1, "No matching template found."
     oldworld = pd.read_csv(oldpaths[0])
     cape = pd.read_csv("maps/moderate_continental_01.csv")
 
-    return oldworld, cape, LoadIslands(difficulty)
+    return oldworld, cape, LoadIslands(difficulty, gamemode)
 
 
-def LoadIslands(difficulty):
+def LoadIslands(difficulty, gamemode):
     small = pd.read_csv("islands/small.csv")
     medium = pd.read_csv("islands/medium.csv")
     large = pd.read_csv("islands/large.csv")
@@ -71,7 +80,7 @@ def LoadIslands(difficulty):
     for islands in allislands:
         islands.drop(islands.index[~(islands.region & REGIONS["Moderate"]).astype(bool)],inplace=True)
         islands.drop(islands.index[~(islands["diff"] & DIFFS[difficulty]).astype(bool)],inplace=True)
-        islands.drop(islands.index[~(islands.gamemode & GAMEMODES["SandboxSingleplayer"]).astype(bool)],inplace=True)
+        islands.drop(islands.index[~(islands.gamemode & GAMEMODES[gamemode]).astype(bool)],inplace=True)
         islands.set_index("shortname",inplace=True)
         assert islands.index.nunique() == len(islands), "Short name is not unique."
     return allislands
