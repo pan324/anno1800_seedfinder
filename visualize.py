@@ -155,6 +155,7 @@ if __name__ == "__main__":
     mapsize     = "Large"
     islandsize  = "Large"
     difficulty  = "Normal"
+    gamemode    = "SandboxSingleplayer"
     seeds       = [1234321]
     
     pd.options.display.max_colwidth = 100
@@ -169,7 +170,7 @@ if __name__ == "__main__":
 
 
     # Order: Harlow 49, Blake 2d, Kahina 4e, Eli 2e
-    oldworld, cape, allislands = Load(maptype, mapsize, islandsize, difficulty)
+    oldworld, cape, allislands = Load(maptype, mapsize, islandsize, difficulty, gamemode)
 
     for seed in seeds:
 ##        for region in [oldworld]:

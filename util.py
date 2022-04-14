@@ -471,13 +471,14 @@ if __name__ == "__main__":
     nums = [mt.Draw() for i in range(10)]
     assert nums == [1469221705, 572008981, 774309, 202951789, 1181100079, 1343392663, 807019732, 288197851, 158012026, 523124643], "RNG yields unexpected numbers."
 
+    gamemode = "SandboxSingleplayer"
 
 
     print("Islands that appear only in normal difficulty:")
-    for size,islands in zip(SIZES, LoadIslands("Normal")):
+    for size,islands in zip(SIZES, LoadIslands("Normal", gamemode)):
         print(f"{size}:", " ".join(islands[islands["diff"]==1].index)) 
     print("\nIslands that appear only in hard difficulty:")
-    for size,islands in zip(SIZES, LoadIslands("Hard")):
+    for size,islands in zip(SIZES, LoadIslands("Hard", gamemode)):
         print(f"{size}:", " ".join(islands[islands["diff"]==2].index))
     print()
 
@@ -489,7 +490,7 @@ if __name__ == "__main__":
         for mapsize in SIZES[::-1]:
             for islandsize in SIZES[::-1]:
                 for maptype in MAPTYPES:
-                    slots,_,islands = Load(maptype, mapsize, islandsize, diff)
+                    slots,_,islands = Load(maptype, mapsize, islandsize, diff, gamemode)
                     normal = slots[(slots.id==0) & slots.type==1]
                     starter = slots[slots.id==1]
                     npc = slots[slots.id==3]
