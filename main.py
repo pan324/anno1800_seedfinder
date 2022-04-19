@@ -89,6 +89,15 @@ scores = {'L1':  30572, 'L2':  27900, 'L3':  26692,
 ##          'S4':  2751,  'S5':  3666,  'S6':  3193,
 ##          'S7':  2156,  'S8':  1734,  'S9':  2519,
 ##          'S10': 3560,  'S11': 1831,  'S12': 3598,
+          
+          'L1R': 29230, 'L2R': 26592, 'L3R': 25330,
+          'L4R': 30364, 'L5R': 27865, 'L6R': 29466,
+          'L7R': 28515, 'L8R': 27077, 'L9R': 25213,
+          'L10R':26682, 'L11R':28109, 'L12R':28774,
+          'L13R':28294, 'L14R':26230, 'CIR': 26809,
+          'M1R': 10894, 'M2R': 13160, 'M3R': 14933,
+          'M4R': 15459, 'M5R': 15743, 'M6R': 15458,
+          'M7R': 14125, 'M8R': 14501, 'M9R': 12159
           }
 
 
@@ -305,12 +314,12 @@ if __name__ == "__main__":
                     workers-=1
                 else:
                     seeds.append(seed)
+                    counter += 1
                     if not counter % 100:
                         # Show the general progress but also get an estimate of the total number of seeds.
                         prog = seed/size
                         estimate = counter/prog
                         print(f"{prog:6.1%}  Estimated number of seeds: {estimate:,.0f}")
-                    counter += 1
         except:
             raise
         finally:

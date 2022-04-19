@@ -7,6 +7,7 @@ import sys,os, zlib
 from struct import unpack
 import xml.etree.ElementTree as ET
 from binascii import unhexlify
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 # The tiles are stored in the large a7m file for each island.
@@ -44,8 +45,19 @@ def GetArea(xmlpath):
     area = area.reshape(width, height)
     area[area!=8193] = np.nan  # Keep only the buildable area.
 
+
+    res = node.find(".//RiverGrid")
+    width = unpack("I", unhexlify(res.find("x").text))[0]
+    height = unpack("I", unhexlify(res.find("y").text))[0]
+    river = unhexlify(res.find("bits").text)
+    river = np.array([bit for byte in river for bit in ExpandBits(byte)], dtype=float)
+    river = river.reshape(width, height)
+    river[river!=0] = np.nan
+    river[river==0] = 1
+
+    
     # areas is 0 on buildable water areas and 8193 on buildable land areas and nan else.
-    areas = water*area
+    areas = water*area*river
     return areas
 
 
@@ -61,9 +73,9 @@ for walk in Walks():
     for dir0, dirs, fnames in walk:
         for fname in fnames:
             if not fname.endswith(".a7m"): continue
-            if "river" in fname: continue
             path = (dir0+"/"+fname).replace("\\","/")
             newname = path.split("/")[-2]
+            if "river" in fname: newname += "R"
             assert newname not in found
             found[newname] = path
 
@@ -73,10 +85,10 @@ for walk in Walks():
                 f.seek(0x310)
                 offset = unpack("Q", f.read(8))[0]
                 size = offset-0x318
-                data = f.read(size)
-                data = zlib.decompress(data)
-                open(tmppath,"wb").write(data)
-                cmd = os.path.normpath(r"../../FileDBReader/FileDBReader.exe decompress -f "+tmppath)
+                payload = f.read(size)
+                payload = zlib.decompress(payload)
+                open(tmppath,"wb").write(payload)
+                cmd = os.path.normpath(r"../../FileDBReader/FileDBReader.exe decompress -f ")+os.path.normpath(tmppath)
                 rv = os.system(cmd)
                 if rv:
                     raise Exception("Could not run cmd. FileDBReader not found?")
