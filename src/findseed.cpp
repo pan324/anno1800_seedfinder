@@ -223,11 +223,11 @@ int testregion(int seed, int ndraws, int npcs, int pirates,
     Island** islands0, Island** islands, int* sizes,
     World world, Slot* slots,
     Wanted* wanted, int nwanted,
-    float* score) {
+    float* score, float minscore) {
 
     // The first step is to stop as soon as a single unwanted island appears.
     // The second step comes only after all islands are picked. Then stop as soon as a wanted island does not appear.
-
+        
     // Set up a small buffer of ndraws.
     Twister mt;
     mt.set(seed, ndraws + 3);
@@ -307,6 +307,7 @@ int testregion(int seed, int ndraws, int npcs, int pirates,
 
     // Success again! All wanted islands included.
     // If we are not running the baseline, get the score of selected islands.
+
     if (score) {
         for (int sz = 0; sz < 3; sz++) {
             for (int i = 0; i < sizes[sz]; i++) {
@@ -324,25 +325,22 @@ int testregion(int seed, int ndraws, int npcs, int pirates,
 
 
 
-
-
-
 // Go through seeds from start to end and return the first seed that works.
 // Each island says whether it is unwanted or not, and we stop as soon as one of them appears.
 // So if there is some large island without rivers that we really do not want, we can turn it unwanted too.
 // The search space (on normal difficulty) finds hits quite fast, so there is some room for filtering.
+//
+// If score is not null, calculate a score and filter by minscore.
 Export int find(int start, uint32_t end, int stepsize, float* score,
-    int ndraws, int ncapedraws,
+    int ndraws, int ncapedraws, float minscore,
     int npcs, int pirate,
     Island* small, int nsmall, Island* medium, int nmedium, Island* large, int nlarge,
-    //World old,  // No idea why this fails.
-    //World cape,
     Slot* slotsold, int a, int b, int c, int d, 
     Slot* slotcape, int e, int f, int g, int h,
     Wanted* wanted, int nwanted, Wanted* wantedcape, int nwantedcape) {
 
     World old{ slotsold, a,b,c,d };
-    World cape{ slotcape, e,f,g,h};
+    World cape{ slotcape, e,f,g,h };
 
 
     // Merge the islands and sizes into one, in the order small, medium, large.
@@ -357,9 +355,12 @@ Export int find(int start, uint32_t end, int stepsize, float* score,
     for (uint32_t seed = start; seed < end; seed += stepsize) {
         //std::cout << seed << "\n";
         if (score) *score = 0.0;
-        if (testregion(seed, ndraws, npcs + 1, pirate, islands0, islands, sizes, old, slots, wanted, nwanted, score)) continue;
-        if (testregion(seed, ncapedraws, npcs, pirate, islands0, islands, sizes, cape, slots, wantedcape, nwantedcape, score)) continue;
-
+        if (testregion(seed, ndraws, npcs + 1, pirate, islands0, islands, sizes, old, slots, wanted, nwanted, score, minscore)) continue;
+        if (testregion(seed, ncapedraws, npcs, pirate, islands0, islands, sizes, cape, slots, wantedcape, nwantedcape, score, minscore)) continue;
+        if (score) {
+            if (*score < minscore)
+                continue;
+        }
 
         // Good end. Return the seed and score.
         for (int i = 0; i < 3; i++) free(islands[i]);

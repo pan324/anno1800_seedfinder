@@ -89,15 +89,15 @@ scores = {'L1':  30572, 'L2':  27900, 'L3':  26692,
 ##          'S4':  2751,  'S5':  3666,  'S6':  3193,
 ##          'S7':  2156,  'S8':  1734,  'S9':  2519,
 ##          'S10': 3560,  'S11': 1831,  'S12': 3598,
-          
-          'L1R': 29230, 'L2R': 26592, 'L3R': 25330,
-          'L4R': 30364, 'L5R': 27865, 'L6R': 29466,
-          'L7R': 28515, 'L8R': 27077, 'L9R': 25213,
-          'L10R':26682, 'L11R':28109, 'L12R':28774,
-          'L13R':28294, 'L14R':26230, 'CIR': 26809,
-          'M1R': 10894, 'M2R': 13160, 'M3R': 14933,
-          'M4R': 15459, 'M5R': 15743, 'M6R': 15458,
-          'M7R': 14125, 'M8R': 14501, 'M9R': 12159
+##          
+##          'L1R': 29230, 'L2R': 26592, 'L3R': 25330,
+##          'L4R': 30364, 'L5R': 27865, 'L6R': 29466,
+##          'L7R': 28515, 'L8R': 27077, 'L9R': 25213,
+##          'L10R':26682, 'L11R':28109, 'L12R':28774,
+##          'L13R':28294, 'L14R':26230, 'CIR': 26809,
+##          'M1R': 10894, 'M2R': 13160, 'M3R': 14933,
+##          'M4R': 15459, 'M5R': 15743, 'M6R': 15458,
+##          'M7R': 14125, 'M8R': 14501, 'M9R': 12159
           }
 
 
@@ -140,17 +140,23 @@ plotcount = 1
 
 
 
-
-
-
 # These settings work best for the largest maps on Large Large Normal; Corners, Atoll, Arc, Archipelago.
 # (Though Archipelago is not recommended because it has 1 small island less than the others.)
-# Try to keep the seeds below 100k (100,000). 
+# Try to keep the seeds below 100k (100,000).
+# It is possible to define a required score for baseline filtering and ignore the other settings,
+# but relying exclusively on that is ~4 times slower than defining unwanted islands.
 unwantedbaseline = "M1R M2R M3R M4R M5R M6R M7R M8R M9R CIR L1R L2R L3R L4R L5R L6R L7R L8R L9R L10R L11R L12R L13R L14R "
 wantedbaselineold = ""
 wantedbaselinecape = ""
+minscorebaseline = -1e30  # Baseline must have this score at least. Leave this at -1e30 to not filter by score.
 
-### Snowflake needs some finetuning already to keep the seeds down.
+
+
+if (maptype, mapsize, islandsize, difficulty) == ("Atoll", "Large", "Small","Hard"):
+    minscorebaseline = 347000
+    unwantedbaseline = ""
+
+# Snowflake needs some finetuning already to keep the seeds down.
 if (maptype, mapsize, islandsize, difficulty) == ("Snowflake", "Large", "Large","Normal"):
     wantedbaselineold += "L1 L6"
     unwantedbaseline  += "CI L8"
@@ -166,6 +172,7 @@ if gamemode == "CampaignMode":
 
 
 
+minscore = -1e30  # No filtering needed for refinement because we sort anyway.
 ##########
 # The setttings below should probably be kept unchanged:
 
@@ -206,7 +213,7 @@ oldworld, cape, allislands = Load(maptype, mapsize, islandsize, difficulty, game
 # Do NOT substitute these variables into where they are used.
 # Or the garbage collector will delete their data before C even runs.
 roldworld, rcape = BinarizeWorld(oldworld), BinarizeWorld(cape)
-rislandsbaseline = [BinarizeIslands(islands, unwantedbaseline) for islands in allislands]
+rislandsbaseline = [BinarizeIslands(islands, unwantedbaseline, scores) for islands in allislands]
 rislands = [BinarizeIslands(islands, unwanted, scores) for islands in allislands]
 rwanted,rwantedcape = BinarizeWanted(allislands, wantedold), BinarizeWanted(allislands, wantedcape)
 rwantedbaseline, rwantedcapebaseline = BinarizeWanted(allislands, wantedbaselineold), BinarizeWanted(allislands, wantedbaselinecape)
@@ -229,7 +236,7 @@ capedraws = CountDraws(cape, oldworldnpcs, oldworldpirate)
 
 
 # Push all the constant data into an easy to use argument.
-fixedargsbaseline = [olddraws, capedraws,
+fixedargsbaseline = [olddraws, capedraws, minscorebaseline,
                      oldworldnpcs, oldworldpirate, 
                      *IslandArgs(rislandsbaseline),
                      *WorldArgs(*roldworld),
@@ -237,7 +244,7 @@ fixedargsbaseline = [olddraws, capedraws,
                      *WantedArgs(rwantedbaseline), *WantedArgs(rwantedcapebaseline),
                      ]
 
-fixedargs = [olddraws, capedraws,
+fixedargs = [olddraws, capedraws, minscore,
              oldworldnpcs, oldworldpirate, 
              *IslandArgs(rislands),
              *WorldArgs(*roldworld),
@@ -251,7 +258,7 @@ dll = CDLL(absdir+"/src/findseed.dll")
 
 dll.find.restype = c_int32
 dll.find.argtypes = [c_uint32, c_uint32, c_uint32, c_void_p,  # Seed to test, scores.
-                     c_uint32, c_uint32,  # Draw counts.
+                     c_uint32, c_uint32, c_float, # Draw counts. Minimum score.
                      c_uint32, c_uint32,  # NPC, pirate count.
                      c_void_p, c_uint32, c_void_p, c_uint32, c_void_p, c_uint32,  # Islands.
                      c_void_p, c_uint32, c_uint32, c_uint32, c_uint32,  # Old world.
@@ -262,9 +269,15 @@ dll.find.argtypes = [c_uint32, c_uint32, c_uint32, c_void_p,  # Seed to test, sc
 
 def Job(start, end, stepsize, queue, fixedargs = fixedargsbaseline, find=dll.find):
     """Worker task for the baseline. Feed the queue with good seeds."""
-    null = c_void_p(0)  # Baseline does no scoring.
+    # Decide whether we want scoring or not. If threshold is -1e30 or smaller, we ignore the scoring.
+    if minscorebaseline > -1e30:
+        score = np.zeros(1,dtype=np.float32)
+        p = score.ctypes.data
+    else:
+        p = c_void_p(0)
+    
     while start < end:
-        res = find(start, end, stepsize, null, *fixedargs)
+        res = find(start, end, stepsize, p, *fixedargs)
         queue.put(res)
         if res == -1:
             break
