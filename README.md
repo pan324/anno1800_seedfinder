@@ -26,6 +26,12 @@ A search on Corners large/large/normal yields the following seeds. I have used t
 | 1650888857 | 324656 | 464782 | 501957 |
 | 975        | 322451 | 456026 | 491958 |
 
+## Example - Filter by Score
+
+The current code always requires a baseline filtering before scores can be sorted. (This was the simplest implementation to allow CPU parallelization.) As a workaround, one can define a baseline score threshold. Ideally, the threshold should be just below our target, to keep the number of baseline seeds small. When the threshold is too low (yielding more than 100000 seeds overall), one can just abort early with ctrl+c and increase the score threshold. Defining minscorebaseline = 498000 and setting unwantedbaseline = "" is a reasonable starting point when including all islands (slightly below the 500000 from the previous example). The baseline creation starts only when no seed file exists for this game setting, so the file must be deleted in the "seeds" folder. The best result is 1203656232 with 504222 tiles overall.
+
+Score filtering takes about 4 times longer than filtering by unwanted islands. Runtime is roughly 10 min with 16 cores.
+
 
 ## Installation
 
