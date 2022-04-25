@@ -1,0 +1,7 @@
+<ModOps>	
+	<ModOp Type="merge" Path="//Template[Name = 'HarborWarehouse7']/Properties/Building">
+          <TerrainType>Water_Including_Coast</TerrainType>
+	</ModOp>
+</ModOps>
+
+

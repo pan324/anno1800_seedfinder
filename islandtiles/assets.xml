@@ -1,0 +1,48 @@
+<ModOps>	
+	<ModOp Type="remove" GUID='1010517' Path="/Values/Cost">
+	</ModOp>
+	
+	<ModOp Type="add" GUID='1010517' Path="/Values/Building">
+		<TerrainType>Water_Including_Coast</TerrainType>
+	</ModOp>
+
+	
+	<ModOp Type="remove" GUID='1010567' Path="/Values/Building/TerrainType">
+	</ModOp>
+	
+	<ModOp Type="remove" GUID='1010567' Path="/Values/Street/IsHarbour">
+	</ModOp>
+	
+	<ModOp Type="merge" GUID='1010567' Path="/Values/Cost/Costs/Item[Ingredient = '1010017']">
+		<Amount>1</Amount>
+	</ModOp>
+	
+	
+	<ModOp Type="remove" Path="//MapGeneratorSlotCountOverride">
+	</ModOp>
+		
+	<ModOp Type="merge" Path="//MineSlotCountPerResourceAmount">
+		<High>
+			<Region>
+				<Moderate>
+					<IslandSize>
+						<Small>
+							<Min>0</Min>
+							<Max>0</Max>
+						</Small>
+						<Medium>
+							<Min>0</Min>
+							<Max>0</Max>
+						</Medium>
+						<Large>
+							<Min>0</Min>
+							<Max>0</Max>
+						</Large>
+					</IslandSize>
+				</Moderate>
+			</Region>
+		</High>
+	</ModOp>
+
+	
+</ModOps>

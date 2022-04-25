@@ -1,6 +1,28 @@
 """Not directly involved in the other tools.
 Count the number of tiles per island.
 This is a good starting point for scoring.
+
+
+But the values are inaccurate for multiple reasons:
+    1) AreaIDs contains all tiles that can ever be built on.
+    2) Water mostly matches where water is, but occasionally a tile is not marked as water,
+       despite being underwater. It behaves like a water tile, so apparently the game uses
+       the heightmap for water/nonwater calculations anyway.
+       The heightmap has 4 numbers for each tile though and it would require testing to understand the calculations.
+    3) Coast tiles are nonwater tiles that only support very few building types.
+       The game does not explicitly store these tiles.
+       Coasts are given as Bezier curves and these are converted to tiles during the loading screen.
+       If the calculations were just implemented in a straightforward manner, that would not even be an issue.
+       But the game rounds these numbers up and down and to .5 values which makes it hard to simulate this.
+    4) Not even all water tiles are guaranteed to be reachable.
+       The coast tiles actually define our reach into the water areas.
+       No coast = no water tiles.
+
+So I just modded the assets.xml and templates.xml to build quays across entire islands (needs 150 workers to unlock).
+In contrast to ornaments these quays are not limited to ~1000 tiles per placement.
+
+Instead, this script here just retrieves the number of river tiles,
+so we can subtract them from islands without rivers (which were retrieved ingame).
 """
 
 import sys,os, zlib
@@ -26,9 +48,12 @@ root = "../../data"
 
 def ExpandBits(byte): return [byte>>i & 1 for i in range(8)]
 
-def GetArea(xmlpath):
+def GetAreas(xmlpath):
     data = ET.parse(xmlpath)
     node = data.getroot()
+
+    # Estimate the islands with river by calculating how many river tiles block land tiles.
+    # The result will slightly underestimate land area because we subtract coast river tiles.
 
     res = node.find(".//Water")
     width = unpack("I", unhexlify(res.find("x").text))[0]
@@ -36,6 +61,7 @@ def GetArea(xmlpath):
     water = unhexlify(res.find("bits").text)
     water = np.array([bit for byte in water for bit in ExpandBits(byte)], dtype=float)
     water = water.reshape(width, height)
+    water[water==0]=np.nan
 
     res = node.find(".//AreaIDs")
     width = unpack("I", unhexlify(res.find("x").text))[0]
@@ -44,6 +70,7 @@ def GetArea(xmlpath):
     area = np.array(unpack(f"{len(area)//2}h",area), dtype=float)
     area = area.reshape(width, height)
     area[area!=8193] = np.nan  # Keep only the buildable area.
+    area[area==8193] = 1
 
 
     res = node.find(".//RiverGrid")
@@ -55,10 +82,8 @@ def GetArea(xmlpath):
     river[river!=0] = np.nan
     river[river==0] = 1
 
-    
-    # areas is 0 on buildable water areas and 8193 on buildable land areas and nan else.
-    areas = water*area*river
-    return areas
+    return area, water, river
+
 
 
 def Walks():
@@ -78,6 +103,7 @@ for walk in Walks():
             if "river" in fname: newname += "R"
             assert newname not in found
             found[newname] = path
+            if not "river" in fname: continue
 
             tmppath = path[:-4]+"tmp"
             if not os.path.exists(tmppath):
@@ -93,16 +119,18 @@ for walk in Walks():
                 if rv:
                     raise Exception("Could not run cmd. FileDBReader not found?")
 
-            area = GetArea(tmppath+".xml")
+            area,water,river = GetAreas(tmppath+".xml")
 
-            landarea = (area==8193).sum()
-            waterarea = (area==0).sum()
-            both = landarea + waterarea
-
-            data.append((newname, landarea, waterarea, both))
+                    
+            before = (water*area == 1).sum()
+            after = (water*area*river == 1).sum()
 
 
-df = pd.DataFrame(data, columns = ["name","landtiles","watertiles", "bothtiles"])
+
+            data.append((newname, before-after))
+
+
+df = pd.DataFrame(data, columns = ["name","rivertiles"])
 
 df = df[df.name.str.startswith("moderate_l_")
        |df.name.str.startswith("moderate_m_")
@@ -115,5 +143,5 @@ df.name = df.name.str.replace("moderate_","").str.replace("l_0","L").str.replace
           .str.replace("community_island","CI")
 
 df = df.set_index("name")
-df.to_csv("tiles.csv")
+df.to_csv("rivertiles.csv")
 

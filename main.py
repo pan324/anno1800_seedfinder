@@ -77,41 +77,29 @@ oldworldpirate = 1    # 0 or 1.
 # So if we only care about the largest islands, we can comment out the rest.
 # This will find the best large islands, though medium islands may suffer.
 
-scores = {'L1':  30572, 'L2':  27900, 'L3':  26692,
-          'L4':  31494, 'L5':  28871, 'L6':  30504,
-          'L7':  30217, 'L8':  28908, 'L9':  27467,
-          'L10': 30536, 'L11': 29672, 'L12': 30257,
-          'L13': 30337, 'L14': 29006, 'CI':  28406, 
-##          'M1':  11610, 'M2':  14195, 'M3':  15821,
-##          'M4':  16329, 'M5':  16236, 'M6':  16285,
-##          'M7':  15140, 'M8':  15576, 'M9':  13038,
-##          'S1':  2170,  'S2':  2918,  'S3':  3902,
-##          'S4':  2751,  'S5':  3666,  'S6':  3193,
-##          'S7':  2156,  'S8':  1734,  'S9':  2519,
-##          'S10': 3560,  'S11': 1831,  'S12': 3598,
-##          
-##          'L1R': 29230, 'L2R': 26592, 'L3R': 25330,
-##          'L4R': 30364, 'L5R': 27865, 'L6R': 29466,
-##          'L7R': 28515, 'L8R': 27077, 'L9R': 25213,
-##          'L10R':26682, 'L11R':28109, 'L12R':28774,
-##          'L13R':28294, 'L14R':26230, 'CIR': 26809,
-##          'M1R': 10894, 'M2R': 13160, 'M3R': 14933,
-##          'M4R': 15459, 'M5R': 15743, 'M6R': 15458,
-##          'M7R': 14125, 'M8R': 14501, 'M9R': 12159
+scores = {'L1':  29977, 'L2':  27159, 'L3':  26100,
+          'L4':  30583, 'L5':  28267, 'L6':  30004,
+          'L7':  29693, 'L8':  28213, 'L9':  26862,
+          'L10': 29964, 'L11': 29178, 'L12': 29572,
+          'L13': 29658, 'L14': 28431, 'CI':  27959, 
+          'M1':  11268, 'M2':  13784, 'M3':  15340,
+          'M4':  15972, 'M5':  15992, 'M6':  15761,
+          'M7':  14788, 'M8':  15270, 'M9':  12611,
+          'S1':  2066,  'S2':  2663,  'S3':  3741,
+          'S4':  2579,  'S5':  3539,  'S6':  3035,
+          'S7':  2056,  'S8':  1573,  'S9':  2422,
+          'S10': 3392,  'S11': 1747,  'S12': 3495,
+          
+          'L1R': 28494, 'L2R': 26000, 'L3R': 24804,
+          'L4R': 29521, 'L5R': 27359, 'L6R': 28986,
+          'L7R': 28055, 'L8R': 26468, 'L9R': 24664,
+          'L10R':25970, 'L11R':27791, 'L12R':28232,
+          'L13R':27666, 'L14R':25753, 'CIR': 26390, 
+          'M1R': 10563, 'M2R': 12827, 'M3R': 14430,
+          'M4R': 15184, 'M5R': 15570, 'M6R': 14952,
+          'M7R': 13858, 'M8R': 14268, 'M9R': 11743,
           }
 
-
-
-
-### Example of an alternative approach with pandas.
-### We directly work with the tiles.csv file.
-### Tiles on medium islands shall be worth only 50% compared to large islands.
-### Tiles on small islands shall be worth only 20%.
-### This way we large islands become almost as large as possible without sacrificing overall area.
-##scores = pd.read_csv("islandtiles/tiles.csv",index_col=0)
-##scores = scores.landtiles #+ 0.1 * scores.watertiles
-##scores.loc["M1":"M9"] *= 0.5
-##scores.loc["S1":"S12"] *= 0.2
 
 
 # Islands that appear only on normal difficulty: M7 M8 M9 L1 L6 L7 L9 L10 L12 L13
@@ -153,7 +141,7 @@ minscorebaseline = -1e30  # Baseline must have this score at least. Leave this a
 
 
 if (maptype, mapsize, islandsize, difficulty) == ("Atoll", "Large", "Small","Hard"):
-    minscorebaseline = 347000
+    minscorebaseline = 347000  # Outdated value before coast tiles were removed.
     unwantedbaseline = ""
 
 # Snowflake needs some finetuning already to keep the seeds down.
