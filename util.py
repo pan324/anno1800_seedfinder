@@ -38,6 +38,24 @@ OTHER_PATHS = {"cape":      ["maps/moderate_c_01.csv"],
                "newworld":  [f"maps/colony01_l_0{i}.csv" for i in range(1,4)]}
 
 
+def LoadNewWorld(mapsize, islandsize, difficulty, gamemode):
+    templates = pd.read_csv("templates/templates.csv")
+    templates.fillna("", inplace=True)  # Turn blank strings to "" instead of nan floats.
+    region = "Colony01"
+    iscampaign = gamemode == "CampaignMode"
+    templates = templates[templates.IslandSize.apply(lambda x: islandsize in x.split(";")) &
+                          templates.TemplateSize.apply(lambda x: mapsize in x.split(";")) &
+                          templates.TemplateRegion.apply(lambda x: region in x.split(";")) &
+                          templates.IsUsedByMapGenerator &
+                          (templates.Campaign == iscampaign)
+                          ]
+    paths = ["maps/"+path.split("/")[-2]+".csv" for path in templates.TemplateFilename]
+    worlds = [pd.read_csv(path) for path in paths]
+        
+    return worlds, LoadIslands(region, difficulty, gamemode)
+    
+    
+
 
 
 def Load(maptype, mapsize, islandsize, difficulty, gamemode):
@@ -67,10 +85,10 @@ def Load(maptype, mapsize, islandsize, difficulty, gamemode):
     oldworld = pd.read_csv(oldpaths[0])
     cape = pd.read_csv("maps/moderate_continental_01.csv")
 
-    return oldworld, cape, LoadIslands(difficulty, gamemode)
+    return oldworld, cape, LoadIslands("Moderate", difficulty, gamemode)
 
 
-def LoadIslands(difficulty, gamemode):
+def LoadIslands(region, difficulty, gamemode):
     small = pd.read_csv("islands/small.csv")
     medium = pd.read_csv("islands/medium.csv")
     large = pd.read_csv("islands/large.csv")
@@ -78,7 +96,7 @@ def LoadIslands(difficulty, gamemode):
     # Select the relevant islands only.
     # Turn the short name into the index and make sure it is unique.
     for islands in allislands:
-        islands.drop(islands.index[~(islands.region & REGIONS["Moderate"]).astype(bool)],inplace=True)
+        islands.drop(islands.index[~(islands.region & REGIONS[region]).astype(bool)],inplace=True)
         islands.drop(islands.index[~(islands["diff"] & DIFFS[difficulty]).astype(bool)],inplace=True)
         islands.drop(islands.index[~(islands.gamemode & GAMEMODES[gamemode]).astype(bool)],inplace=True)
         islands.set_index("shortname",inplace=True)
@@ -153,7 +171,10 @@ def Map(seed, world, allislands, npccount, piratecount, hasblake = True, verbose
     allislands = deepcopy(allislands)
     
     mt = MT(seed)
-    # No random world to choose from.
+    # If we have multiple worlds to choose from, pick one.
+    if type(world) is list:
+        world = world[mt.Randint(len(world))]
+    
     slots = world
     if verbose: print(f"{mt.mti():04x} Selected template.")
 
@@ -455,6 +476,7 @@ class MT:
     def Draw(self):
         return dll.draw()
     def Randint(self, n):
+        """Return integer in the interval [0,n-1]."""
         assert n
         return dll.randint(n)
     def Shuffle(self, d):

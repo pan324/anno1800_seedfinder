@@ -13,7 +13,7 @@ This script has full support for NPCs, which is not implemented in the C code fo
 import sys,os,copy
 import pandas as pd
 import matplotlib.pyplot as plt
-from util import Load, MT, Map
+from util import Load, LoadNewWorld, MT, Map
 
     
 
@@ -151,7 +151,7 @@ def Plot(seed, oldworld, cape, allislands, npccount, piratecount):
 
 
 if __name__ == "__main__":
-    maptype     = "Snowflake"
+    maptype     = "Archipelago"
     mapsize     = "Large"
     islandsize  = "Large"
     difficulty  = "Normal"
@@ -165,12 +165,13 @@ if __name__ == "__main__":
     # NPCs and pirates do not affect the selection/position/rotation of medium and large islands.
     # Lowering these numbers will increase the numbers of small islands by the same amount.
     npccount    = 2  # Does not include Archibald and pirate.
-    piratecount = 1  # 0 or 1.
+    piratecount = 0  # 0 or 1.
 
 
 
     # Order: Harlow 49, Blake 2d, Kahina 4e, Eli 2e
     oldworld, cape, allislands = Load(maptype, mapsize, islandsize, difficulty, gamemode)
+    newworld, newislands = LoadNewWorld(mapsize, islandsize, difficulty, gamemode)
 
     for seed in seeds:
 ##        for region in [oldworld]:
@@ -183,6 +184,8 @@ if __name__ == "__main__":
 ##            plt.show()
 
         Plot(seed, oldworld, cape, allislands, npccount, piratecount)
+
+        PlotWorld(Map(seed, newworld, newislands, npccount=1, piratecount=0, hasblake=False), pos=0)
         plt.show()
 
 
