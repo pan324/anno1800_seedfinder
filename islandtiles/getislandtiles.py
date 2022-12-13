@@ -106,6 +106,9 @@ for walk in Walks():
             if not "river" in fname: continue
 
             tmppath = path[:-4]+"tmp"
+
+            print(tmppath)
+            asdf
             if not os.path.exists(tmppath):
                 f = open(path,"rb")
                 f.seek(0x310)

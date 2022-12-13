@@ -126,6 +126,11 @@ struct Twister {
         return mt[mti++];
     }
 
+    void reset() {
+        // Set mti to 0 so we can reuse the random values for the next world.
+        mti = 0;
+    }
+
     uint32_t randint(int mod) {
         // Keep rejecting samples in the region around the limit until we get something lower.
         // The odds of that happening are around one in a billion though.
@@ -217,20 +222,16 @@ int fillslots(Slot* slots, int nslots, Island** islands, int* sizes, Twister* mt
 }
 
 
-// Test a single region (either old world or cape). Return 0 on success, else 1.
-// No unwanted island may appear and all wanted islands must appear.
-int testregion(int seed, int ndraws, int npcs, int pirates,
+// Test a single region (old world, cape, newworld). Return 0 on success, else 1.
+// No unwanted island may appear. Also fill out the score if desired.
+int testregion(int seed, int npcs, int pirates,
     Island** islands0, Island** islands, int* sizes,
     World world, Slot* slots,
-    Wanted* wanted, int nwanted,
-    float* score, float minscore) {
+    float* score, float minscore, Twister& mt) {
 
     // The first step is to stop as soon as a single unwanted island appears.
     // The second step comes only after all islands are picked. Then stop as soon as a wanted island does not appear.
         
-    // Set up a small buffer of ndraws.
-    Twister mt;
-    mt.set(seed, ndraws + 3);
 
     // Make a copy of the original data because of picking islands and world shuffling.
     for (int i = 0; i < 3; i++) {
@@ -289,15 +290,6 @@ int testregion(int seed, int ndraws, int npcs, int pirates,
     // NPCs done. All islands placed.
 
 
-
-    // But are all wanted islands included?
-    for (int i = 0; i < nwanted; i++) {
-        //std::cout << "Check wanted" << i << "\n";
-        if (islands[wanted[i].size][wanted[i].index].picked != 1)
-            return 1;
-        //std::cout << "Check wanted pass." << i << "\n";
-    }
-
     //std::cout << "Picked large islands:\n";
     //for (int i = 0; i < sizes[2]; i++) {
     //    if (islands[2][i].picked == 1)
@@ -332,44 +324,70 @@ int testregion(int seed, int ndraws, int npcs, int pirates,
 //
 // If score is not null, calculate a score and filter by minscore.
 Export int find(int start, uint32_t end, int stepsize, float* score,
-    int ndraws, int ncapedraws, float minscore,
-    int npcs, int pirate,
+    float minscore, int ndraws,
+    int npcs, int pirate, int npcs2, int pirate2,
     Island* small, int nsmall, Island* medium, int nmedium, Island* large, int nlarge,
-    Slot* slotsold, int a, int b, int c, int d, 
-    Slot* slotcape, int e, int f, int g, int h,
-    Wanted* wanted, int nwanted, Wanted* wantedcape, int nwantedcape) {
+    Island* small2, int nsmall2, Island* medium2, int nmedium2, Island* large2, int nlarge2,
+    World& old, World& cape, World& new1, World& new2, World& new3) {
 
-    World old{ slotsold, a,b,c,d };
-    World cape{ slotcape, e,f,g,h };
-
+    World newworlds[]{ new1, new2, new3 };
 
     // Merge the islands and sizes into one, in the order small, medium, large.
     // Allocate memory to keep a copy of slots and islands.
     Island* islands0[]{ small, medium, large };
+    Island* islands02[]{ small2, medium2, large2 };
+
     Island* islands[3];
     int sizes[]{ nsmall, nmedium, nlarge };
-    for (int i = 0; i < 3; i++)
-        islands[i] = (Island*)malloc(sizes[i] * sizeof(Island));
-    Slot* slots = (Slot*)malloc(std::max(old.n, cape.n) * sizeof(Slot*));
+    auto nislands = nsmall + nmedium + nlarge;
+    islands[0] = (Island*) malloc(nislands * sizeof(Island));
+    islands[1] = islands[0] + nsmall;
+    islands[2] = islands[1] + nmedium;
+
+    Island* islands2[3];
+    int sizes2[]{ nsmall2, nmedium2, nlarge2 };
+    nislands = nsmall2 + nmedium2 + nlarge2;
+    islands2[0] = (Island*)malloc(nislands * sizeof(Island));
+    islands2[1] = islands2[0] + nsmall2;
+    islands2[2] = islands2[1] + nmedium2;
+
+    auto nslots = std::vector<int>{ old.n, cape.n, new1.n, new2.n, new3.n };
+    Slot* slots = (Slot*)malloc(*std::max_element(nslots.begin(), nslots.end()) * sizeof(Slot*));
+
 
     for (uint32_t seed = start; seed < end; seed += stepsize) {
         //std::cout << seed << "\n";
+
+        // Set up a small buffer of ndraws.
+        // The RNG rejects and redraws bad random numbers with extremely low probability.
+        // So we add 3 to the draws to make sure that this will not be an issue.
+        Twister mt;
+        mt.set(seed, ndraws + 3);
+
         if (score) *score = 0.0;
-        if (testregion(seed, ndraws, npcs + 1, pirate, islands0, islands, sizes, old, slots, wanted, nwanted, score, minscore)) continue;
-        if (testregion(seed, ncapedraws, npcs, pirate, islands0, islands, sizes, cape, slots, wantedcape, nwantedcape, score, minscore)) continue;
+        if (testregion(seed, npcs + 1, pirate, islands0, islands, sizes, old, slots, score, minscore, mt)) continue;
+        mt.reset();
+        if (testregion(seed, npcs, pirate, islands0, islands, sizes, cape, slots, score, minscore, mt)) continue;
+        mt.reset();
+        // Draw the world right here.
+        int worldnum = mt.randint(3);
+        if (testregion(seed, npcs2, pirate2, islands02, islands2, sizes2, newworlds[worldnum], slots, score, minscore, mt)) continue;
+
         if (score) {
             if (*score < minscore)
                 continue;
         }
 
         // Good end. Return the seed and score.
-        for (int i = 0; i < 3; i++) free(islands[i]);
+        free(islands[0]);
+        free(islands2[0]);
         free(slots);
         return seed;
-
     }
 
-    for (int i = 0; i < 3; i++) free(islands[i]);
+    // The function has exhausted its range of seed candidates. Clean up and return -1.
+    free(islands[0]);
+    free(islands2[0]);
     free(slots);
     return -1;
 }

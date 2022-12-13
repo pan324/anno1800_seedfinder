@@ -3,6 +3,7 @@ import numpy as np
 import sys,os
 from ctypes import *
 from copy import copy,deepcopy
+import pickle
 
 MAPTYPES = ["Archipelago", "Atoll", "Corners", "Arc", "Snowflake"]
 SIZES = ["Small","Medium","Large"]
@@ -29,42 +30,14 @@ ISLAND_TYPE = {"Normal": 1,
                "ThirdParty": 8,
                "PirateIsland": 16}
 
-
-
-OTHER_PATHS = {"cape":      ["maps/moderate_c_01.csv"],
-               "arctic":    ["maps/colony_03_sp.csv"],
-               "enbesa":    ["maps/colony02_01.csv"],
-               "enbesa_mp": ["maps/colony02_01_mp.csv"],
-               "newworld":  [f"maps/colony01_l_0{i}.csv" for i in range(1,4)]}
-
-
-def LoadNewWorld(mapsize, islandsize, difficulty, gamemode):
-    templates = pd.read_csv("templates/templates.csv")
-    templates.fillna("", inplace=True)  # Turn blank strings to "" instead of nan floats.
-    region = "Colony01"
-    iscampaign = gamemode == "CampaignMode"
-    templates = templates[templates.IslandSize.apply(lambda x: islandsize in x.split(";")) &
-                          templates.TemplateSize.apply(lambda x: mapsize in x.split(";")) &
-                          templates.TemplateRegion.apply(lambda x: region in x.split(";")) &
-                          templates.IsUsedByMapGenerator &
-                          (templates.Campaign == iscampaign)
-                          ]
-    paths = ["maps/"+path.split("/")[-2]+".csv" for path in templates.TemplateFilename]
-    worlds = [pd.read_csv(path) for path in paths]
-        
-    return worlds, LoadIslands(region, difficulty, gamemode)
-    
-    
-
-
-
-def Load(maptype, mapsize, islandsize, difficulty, gamemode):
-    """Load oldworld, cape and all relevant islands."""
+def Load(maptype, mapsize, islandsize, difficulty, gamemode, dlc12):
+    """Load oldworld, cape, newworlds and all relevant islands."""
     assert maptype in MAPTYPES, f"Maptype must be one of {MAPTYPES}"
     assert mapsize in SIZES, f"Mapsize must be one of: {SIZES}"
     assert islandsize in SIZES, f"Islandsize must be one of: {SIZES}"
     assert difficulty in DIFFS, f"Difficulty must be one of: {list(DIFFS.keys())}"
     assert gamemode in GAMEMODES, f"Gamemode must be one of: {list(GAMEMODES.keys())}"
+    assert dlc12 in [True,False], f"dlc12 must be True or False."
 
     iscampaign = gamemode == "CampaignMode"
 
@@ -73,22 +46,30 @@ def Load(maptype, mapsize, islandsize, difficulty, gamemode):
     
     templates = templates[templates.IslandSize.apply(lambda x: islandsize in x.split(";")) &
                           templates.TemplateSize.apply(lambda x: mapsize in x.split(";")) &
-                          templates.TemplateMapType.apply(lambda x: maptype in x.split(";")) &
                           templates.IsUsedByMapGenerator &
                           (templates.Campaign == iscampaign)
                           ]
+
+    # Templates are now prefiltered and we can grab the (name of the) old world and the list of newworlds (Colony01).
+    oldpaths = list(templates[templates.TemplateMapType.apply(lambda x: maptype in x.split(";"))].TemplateFilename)
+    capepath = "data/dlc01/sessions/maps/sunken_treasures/moderate_continental_01/moderate_c_01.a7t"
+    newpaths = templates[templates.TemplateRegion.apply(lambda x: "Colony01" in x.split(";"))]
+    newpaths = list(newpaths.EnlargedTemplateFilename if dlc12 else newpaths.TemplateFilename)
+
+    assert not len(oldpaths)>1, "The old world should not have more than one template."
+    assert not len(oldpaths)<1, "No matching old world template found."
+    assert len(newpaths)==3, "The new world should have three templates."
+    maps = pickle.load(open("maps/pickle","rb"))
     
-    oldpaths = ["maps/"+path.split("/")[-2]+".csv" for path in templates.TemplateFilename]
-
-    assert not len(oldpaths)>1, "The code cannot handle multiple templates."
-    assert not len(oldpaths)<1, "No matching template found."
-    oldworld = pd.read_csv(oldpaths[0])
-    cape = pd.read_csv("maps/moderate_continental_01.csv")
-
-    return oldworld, cape, LoadIslands("Moderate", difficulty, gamemode)
+    oldworld = maps[oldpaths[0]]
+    cape = maps[capepath]
+    newworlds = [maps[path] for path in newpaths]
+    return oldworld, cape, newworlds, LoadIslands("Moderate", difficulty, gamemode), LoadIslands("Colony01", difficulty, gamemode)
 
 
 def LoadIslands(region, difficulty, gamemode):
+    """Load all islands for this region/difficulty/gamemode.
+    Assert that short names are unique for this setting."""
     small = pd.read_csv("islands/small.csv")
     medium = pd.read_csv("islands/medium.csv")
     large = pd.read_csv("islands/large.csv")
@@ -158,7 +139,6 @@ def ChooseIslandsForSlots(slots, mt, world, allislands):
 
 def Map(seed, world, allislands, npccount, piratecount, hasblake = True, verbose=False):
     """Return a dataframe with all islands placed.
-
     Placement order:
         1) Normal/Starter islands: slotid == 1, as well as (slotid==0 and slottype==1)
         2) Pirate/NPCs: slotid == 4, as well as slotid==3.
@@ -238,6 +218,7 @@ def Map(seed, world, allislands, npccount, piratecount, hasblake = True, verbose
     
     df = pd.concat([islands, pirate, npc])
     return df
+
 
 
 
@@ -392,6 +373,17 @@ def BinarizeIslands(islands, unwanted = [], scores={}):
 ##    return rawislands.ctypes.data, len(rawislands)  # Is garbage collected on return. Ouch.
     return rawislands
 
+class Slot(Structure):
+    _fields_ = [("size", c_int8),
+                ("id", c_int8),
+                ("actualid", c_int16)]
+class World(Structure):
+    _fields_ = [("slots", POINTER(Slot)),
+                ("starter", c_int),
+                ("npc", c_int),
+                ("pirate", c_int),
+                ("n", c_int)]
+
 def BinarizeWorld(world):
     """Return an array with slots for the C code.
     It is a single array with multiple sections, in this order:
@@ -414,46 +406,25 @@ def BinarizeWorld(world):
     pirate = slots[slots.id==4]
 
     offsets = [0]
-    rawarrays = []
-    for array in (normal, starter, npc, pirate):
-        rawarray = np.zeros(len(array), dtype="u1, u1, u2")
-        for i,(_,d) in enumerate(array.iterrows()):
-            did = 0 if d.id in (3,4) else d.id
-            rawarray[i] = (d.sz, 1<<did, d.id)
-        rawarrays.append(rawarray)
-        offsets.append(offsets[-1] + len(array))
+    nslots = sum(len(array) for array in (normal,starter,npc,pirate))
+    binworld = World()
+    binworld.slots = (nslots * Slot)()
 
     # Put everything into a single array.
     # Afterwards we just tell the shuffler which part of that data to shuffle.
-    rawworld = np.concatenate(rawarrays)
-    return rawworld, offsets[1:]
+    i = 0
+    for array in (normal, starter, npc, pirate):
+        for _,d in array.iterrows():
+            did = 0 if d.id in (3,4) else d.id
+            binworld.slots[i] = (d.sz, 1<<did, d.id)
+            i += 1
+        offsets.append(offsets[-1] + len(array))
 
-
-
-def BinarizeWanted(allislands, wanteds):
-    """Return an array with wanted islands for the C code.
-    struct Wanted {
-        // We want to check that islands[size][index].picked is true.
-        int16_t size;
-        int16_t index;
-    };
-    """
-    rawarray = np.zeros(len(wanteds), dtype="u2, u2")
-    for i,wanted in enumerate(wanteds):
-        if "CI" in wanted:
-            size = 2
-        else:
-            size = "SML".index(wanted[0])
-        
-        islands = allislands[size]
-        try:
-            index = islands.index.get_loc(wanted)
-        except KeyError as e:
-            e.args = (f"You want to include an island that does not exist on this difficulty: {wanted}",)
-            raise
-        rawarray[i] = (size, index) 
-    return rawarray
-
+    binworld.starter = offsets[1]
+    binworld.npc = offsets[2]
+    binworld.pirate = offsets[3]
+    binworld.n = offsets[4]
+    return binworld
 
 
 # Mersenne Twister wrapper.
@@ -497,12 +468,26 @@ if __name__ == "__main__":
 
 
     print("Islands that appear only in normal difficulty:")
-    for size,islands in zip(SIZES, LoadIslands("Normal", gamemode)):
-        print(f"{size}:", " ".join(islands[islands["diff"]==1].index)) 
+    for size,islands in zip(SIZES, LoadIslands("Moderate","Normal", gamemode)):
+        print(f" {size}:", " ".join(islands[islands["diff"]==1].index)) 
     print("\nIslands that appear only in hard difficulty:")
-    for size,islands in zip(SIZES, LoadIslands("Hard", gamemode)):
-        print(f"{size}:", " ".join(islands[islands["diff"]==2].index))
+    for size,islands in zip(SIZES, LoadIslands("Moderate","Hard", gamemode)):
+        print(f" {size}:", " ".join(islands[islands["diff"]==2].index))
     print()
+
+
+    print("NEW WORLD:")
+    print("Islands that appear only in normal difficulty:")
+    for size,islands in zip(SIZES, LoadIslands("Colony01","Normal", gamemode)):
+        print(f" {size}:", " ".join(islands[islands["diff"]==1].index)) 
+    print("\nIslands that appear only in hard difficulty:")
+    for size,islands in zip(SIZES, LoadIslands("Colony01","Hard", gamemode)):
+        print(f" {size}:", " ".join(islands[islands["diff"]==2].index))
+    print()
+    print()
+
+
+
 
 
 
@@ -512,7 +497,7 @@ if __name__ == "__main__":
         for mapsize in SIZES[::-1]:
             for islandsize in SIZES[::-1]:
                 for maptype in MAPTYPES:
-                    slots,_,islands = Load(maptype, mapsize, islandsize, diff, gamemode)
+                    slots,_,newslots, islands, newislands = Load(maptype, mapsize, islandsize, diff, gamemode, True)
                     normal = slots[(slots.id==0) & slots.type==1]
                     starter = slots[slots.id==1]
                     npc = slots[slots.id==3]

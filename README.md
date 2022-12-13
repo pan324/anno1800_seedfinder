@@ -1,36 +1,15 @@
 # Anno 1800 Seed Finder and Visualizer
 
-The finder supports these filters:
+The finder goes through all seeds to find those with the highest scores. The default scoring is the number of buildable island tiles. To speed up things, it also allows a list of unwanted islands. These islands may not appear in their respective world. The obvious choice here are islands with rivers.
 
-1) Unwanted islands. These islands may not appear in old world or cape.
-2) Wanted islands (old world). These islands must appear in the old world.
-3) Wanted islands (cape). These islands must appear in cape.
+The map type, map size, island size and island difficulty can be adjusted. The finder works in two iterations, baseline filtering and then a fast seed refinement step. Both do the same thing but they still have their purpose.
 
-Additionally, it will sort the results according to the sum of all island scores, where all island scores can be specified. The default score is the number of land tiles of all large islands.
+1) The baseline filtering brute forces through all 2147483648 possible seeds to discard universally bad islands (e.g. with rivers). Results are saved to disk. Performance is roughly 1 million seeds per second per CPU core, which means comfortable 2.5 minutes runtime on a 5950X. If no unwanted islands are defined, runtimes are roughly 4 times longer. The riverless baseline for the Corners map is already included. 
+2) The seed refinement loads the seeds created in step 1 from disk. Because relatively few seeds are left, refinement takes just a second to run. This makes it easy to visualize multiple seeds or tweak the requirements. In particular, the number of NPCs and pirates has only a tiny impact on the score and no impact on whether islands have rivers or not, so the same baseline can be used for any NPC/pirate combination.
 
-The map type, map size, island size and island difficulty can be adjusted. The finder works in two iterations, a rough baseline filtering for rivers and then a fast seed refinement step. 
+The finder will aggressively try to reuse baseline files, so if you changed the unwanted islands and want to create a baseline from scratch, you must go into the seeds folder and manually delete the existing baseline file.
 
-1) The baseline filtering brute forces through all 2147483648 possible seeds to discard universally bad islands (e.g. with rivers). Results are saved to disk. Performance is roughly 1 million seeds per second per CPU core, which means comfortable 2.5 minutes runtime on a 5950X. Baselines for the largest maps are already shipped with the repository. (Although only Atoll, Corners, Arc are recommended because they have the most islands. Run util.py for more information.)
-2) The seed refinement loads the seeds created in step 1 from disk. Because relatively few seeds are left, refinement takes just a second to run. This makes it easy to tweak the requirements until just a handful of excellent seeds is found.
-
-The results can be visualized. A map with islands and NPCs can be either shown directly or saved to disk. That map contains both the old world and the cape area, because these are the two worlds where the seed has an impact.
-
-## Example
-
-A search on Corners large/large/normal yields the following seeds. I have used three different scorings, all based on land tiles. Score "L" is the default and considers large islands only. Score "LM" considers all land tiles of large and medium islands. Score "LMS" includes small islands as well (and assumes all NPCs and pirates). The first seed has the optimal L score, the second seed has the optimal LM score, and the third seed has the optimal LMS score. The last seed 975 is a typically used seed. We can see that 975 misses out on around 10k tiles, which is slightly smaller than a medium island. The optimized choices are all very similar with just minor variations. 1384368905 offers around 2000 more tiles on large islands only but ends with 4000 fewer tiles overall. Still a very solid choice if one just wants to have a good time with large islands. 
-
-| Seed | L | LM | LMS |
-| --- | --- | --- | --- |
-| 1384368905 | 328847 | 461189 | 497139 |
-| 1636799193 | 326428 | 465158 | 500060 |
-| 1650888857 | 324656 | 464782 | 501957 |
-| 975        | 322451 | 456026 | 491958 |
-
-## Example - Filter by Score
-
-The current code always requires a baseline filtering before scores can be sorted. (This was the simplest implementation to allow CPU parallelization.) As a workaround, one can define a baseline score threshold. Ideally, the threshold should be just below our target, to keep the number of baseline seeds small. When the threshold is too low (yielding more than 100000 seeds overall), one can just abort early with ctrl+c and increase the score threshold. Defining minscorebaseline = 498000 and setting unwantedbaseline = "" is a reasonable starting point when including all islands (slightly below the 500000 from the previous example). The baseline creation starts only when no seed file exists for this game setting, so the file must be deleted in the "seeds" folder. The best result is 1203656232 with 504222 tiles overall.
-
-Score filtering takes about 4 times longer than filtering by unwanted islands. Runtime is roughly 10 min with 16 cores.
+A map with islands and NPCs can be either shown directly or saved to disk. That map contains the old world, cape area and new world, because these are the worlds where the seed has an impact.
 
 
 ## Installation

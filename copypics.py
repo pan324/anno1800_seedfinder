@@ -33,18 +33,18 @@ for walk in Walks():
             assert newname not in found
             found[newname] = path
 
-##for name,path in found.items():
-##    # Make them smaller to keep the repository smallish.
-##    NORM = 2
-##    im = Image.open(path)
-##    im = im.resize((int(im.width/NORM), int(im.height/NORM)))
-##    im.save(outdir+"/"+name+".png")
-####    shutil.copy2(path, outdir+"/"+name+".png")
-##
+for name,path in found.items():
+    # Make them smaller to keep the repository smallish.
+    NORM = 2
+    im = Image.open(path)
+    im = im.resize((int(im.width/NORM), int(im.height/NORM)))
+    im.save(outdir+"/"+name+".png")
+##    shutil.copy2(path, outdir+"/"+name+".png")
+
 
 
 # NPC pictures:
-for name in ["02","08","07", "03"]:
+for name in ["02","08","07", "03", "04", "05"]:
     NORM = 1.4
     path = f"{root}/ui/2kimages/main/profiles/3rd_party_{name}_0.dds"
     im = Image.open(path)

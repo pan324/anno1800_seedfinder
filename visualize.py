@@ -5,15 +5,13 @@ The plot is divided in two parts:
 
 Each of them has a different zoom level so that they fit into their half of the screen.
 This means that on large old worlds, cape islands seem larger (because the map is zoomed in more).
-
-This script has full support for NPCs, which is not implemented in the C code for seed finding.
 """
 
 
 import sys,os,copy
 import pandas as pd
 import matplotlib.pyplot as plt
-from util import Load, LoadNewWorld, MT, Map
+from util import Load, MT, Map
 
     
 
@@ -46,7 +44,7 @@ def MoveWindow(x=0,y=0):
         f.canvas.manager.window.move(x-8, 0)
     
 
-def PlotWorld(df, pos=0):
+def PlotWorld(df, oldworld=1, pos=0):
     """Plot a worldmap. pos can have these values:
     pos == 0: Plot this map in the left half of the screen.
     pos == 1: Plot this map in the left half of the screen, but create a large canvas.
@@ -87,10 +85,10 @@ def PlotWorld(df, pos=0):
     images = []
     for i,d in df.iterrows():
         if d.name.startswith("Pirate"):
-            path = "pics/NPC_03.png"
+            path = "pics/NPC_03.png" if oldworld else "pics/NPC_04.png"
             name = ""
         elif d.name.startswith("NPC"):
-            path = "pics/"+d.name+".png"
+            path = "pics/"+d.name+".png" if oldworld else "pics/NPC_05.png"
             name = ""
         else:
             path = "pics/" + d.path.split("/")[-1].replace(".a7m",".png")
@@ -144,38 +142,40 @@ def PlotWorld(df, pos=0):
         # figimage always draws images from the bottom left, so we need to center the data.
         plt.figimage(im, x - d.xsize/2, y - d.ysize/2)        
 
+def Plot(seed, oldworld, cape, newworlds, oldislands, newislands, npccount, piratecount, newnpccount, newpiratecount):
+    PlotWorld(Map(seed, oldworld, oldislands, npccount, piratecount), oldworld=1, pos=1)
+    PlotWorld(Map(seed, cape, oldislands, npccount, piratecount, hasblake=False), oldworld=1,pos=2)
 
-def Plot(seed, oldworld, cape, allislands, npccount, piratecount):
-    PlotWorld(Map(seed, oldworld, allislands, npccount, piratecount), pos=1)
-    PlotWorld(Map(seed, cape, allislands, npccount, piratecount, hasblake=False), pos=2)
+    PlotWorld(Map(seed, newworlds, newislands, newnpccount, newpiratecount, hasblake=False), oldworld=0,pos=0)
 
 
 if __name__ == "__main__":
-    maptype     = "Archipelago"
+    maptype     = "Corners"
     mapsize     = "Large"
     islandsize  = "Large"
-    difficulty  = "Normal"
+    difficulty  = "Hard"
     gamemode    = "SandboxSingleplayer"
-    seeds       = [1234321]
+    dlc12       = True
+    seeds       = [25047]
     
+    # NPCs and pirates do not affect the selection/position/rotation of medium and large islands.
+    # Lowering these numbers will increase the numbers of small islands by the same amount.
+    npccount       = 2  # 0,1,2. Does not include Archibald and pirate.
+    piratecount    = 1  # 0,1
+    newnpccount    = 1  # 0,1
+    newpiratecount = 1  # 0,1
+
+    
+
     pd.options.display.max_colwidth = 100
     pd.options.display.width  = 0
 
-
-    # NPCs and pirates do not affect the selection/position/rotation of medium and large islands.
-    # Lowering these numbers will increase the numbers of small islands by the same amount.
-    npccount    = 2  # Does not include Archibald and pirate.
-    piratecount = 0  # 0 or 1.
-
-
-
     # Order: Harlow 49, Blake 2d, Kahina 4e, Eli 2e
-    oldworld, cape, allislands = Load(maptype, mapsize, islandsize, difficulty, gamemode)
-    newworld, newislands = LoadNewWorld(mapsize, islandsize, difficulty, gamemode)
+    oldworld, cape, newworlds, oldislands, newislands = Load(maptype, mapsize, islandsize, difficulty, gamemode, dlc12)
 
     for seed in seeds:
 ##        for region in [oldworld]:
-##            df = Map(seed, region, allislands, npccount, piratecount)
+##            df = Map(seed, region, oldislands, npccount, piratecount)
 ##            plt.figure(figsize=(12,9))
 ##            color = ["C"+str(i) for i in df.id]
 ##            plt.scatter(df.x, df.y, s=(df.sz+0.8)**2*40,c=color)
@@ -183,10 +183,9 @@ if __name__ == "__main__":
 ##                plt.annotate(d.name, [d.x, d.y])
 ##            plt.show()
 
-        Plot(seed, oldworld, cape, allislands, npccount, piratecount)
-
-        PlotWorld(Map(seed, newworld, newislands, npccount=1, piratecount=0, hasblake=False), pos=0)
+        Plot(seed, oldworld, cape, newworlds, oldislands, newislands, npccount, piratecount, newnpccount, newpiratecount)
         plt.show()
+
 
 
 
