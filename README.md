@@ -4,12 +4,12 @@ The finder goes through all seeds to find those with the highest scores. The def
 
 The map type, map size, island size and island difficulty can be adjusted. The finder works in two iterations, baseline filtering and then a fast seed refinement step. Both do the same thing but they still have their purpose.
 
-1) The baseline filtering brute forces through all 2147483648 possible seeds to discard universally bad islands (e.g. with rivers). Results are saved to disk. Performance is roughly 1 million seeds per second per CPU core, which means comfortable 2.5 minutes runtime on a 5950X. If no unwanted islands are defined, runtimes are roughly 4 times longer. The riverless baseline for the Corners map is already included. 
+1) The baseline filtering brute forces through all 2147483648 possible seeds to discard universally bad islands (e.g. with rivers). Results are saved to disk. Performance is roughly 1 million seeds per second per CPU core, which means comfortable 2.5 minutes runtime on a 5950X. If no unwanted islands are defined, runtimes are roughly 4 times longer. The riverless baseline for the five old world maps is already included. 
 2) The seed refinement loads the seeds created in step 1 from disk. Because relatively few seeds are left, refinement takes just a second to run. This makes it easy to visualize multiple seeds or tweak the requirements. In particular, the number of NPCs and pirates has only a tiny impact on the score and no impact on whether islands have rivers or not, so the same baseline can be used for any NPC/pirate combination.
 
 The finder will aggressively try to reuse baseline files, so if you changed the unwanted islands and want to create a baseline from scratch, you must go into the seeds folder and manually delete the existing baseline file.
 
-A map with islands and NPCs can be either shown directly or saved to disk. That map contains the old world, cape area and new world, because these are the worlds where the seed has an impact.
+The finder will also visualize the map with islands and NPCs. That map contains the old world, cape area and new world, because these are the worlds where the seed has an impact.
 
 
 ## Installation
