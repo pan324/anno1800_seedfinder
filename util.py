@@ -58,12 +58,17 @@ def Load(maptype, mapsize, islandsize, difficulty, gamemode, dlc12):
 
     assert not len(oldpaths)>1, "The old world should not have more than one template."
     assert not len(oldpaths)<1, "No matching old world template found."
-    assert len(newpaths)==3, "The new world should have three templates."
+##    assert len(newpaths)==3, "The new world should have three templates."
+    
     maps = pickle.load(open("maps/pickle","rb"))
     
     oldworld = maps[oldpaths[0]]
     cape = maps[capepath]
     newworlds = [maps[path] for path in newpaths]
+    if len(newworlds)!=3:
+        newworlds = [newworlds[0]]*3
+
+    
     return oldworld, cape, newworlds, LoadIslands("Moderate", difficulty, gamemode), LoadIslands("Colony01", difficulty, gamemode)
 
 

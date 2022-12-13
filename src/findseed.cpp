@@ -287,7 +287,7 @@ int testregion(int seed, int npcs, int pirates,
     std::stable_partition(start, start+size, [](Slot slot) {return slot.actualid == 3; });
     res = fillslots(start, size, islands, sizes, &mt);
     if (res) return res;  // Bad end.
-    // NPCs done. All islands placed.
+    // NPCs done. All islands placed. All unwanted islands avoided.
 
 
     //std::cout << "Picked large islands:\n";
@@ -297,15 +297,11 @@ int testregion(int seed, int npcs, int pirates,
     //}
 
 
-    // Success again! All wanted islands included.
-    // If we are not running the baseline, get the score of selected islands.
-
-    if (score) {
-        for (int sz = 0; sz < 3; sz++) {
-            for (int i = 0; i < sizes[sz]; i++) {
-                if (islands[sz][i].picked == 1) {
-                    *score += islands[sz][i].score;
-                }
+    // Get the score of selected islands.
+    for (int sz = 0; sz < 3; sz++) {
+        for (int i = 0; i < sizes[sz]; i++) {
+            if (islands[sz][i].picked == 1) {
+                *score += islands[sz][i].score;
             }
         }
     }
@@ -328,7 +324,9 @@ Export int find(int start, uint32_t end, int stepsize, float* score,
     int npcs, int pirate, int npcs2, int pirate2,
     Island* small, int nsmall, Island* medium, int nmedium, Island* large, int nlarge,
     Island* small2, int nsmall2, Island* medium2, int nmedium2, Island* large2, int nlarge2,
-    World& old, World& cape, World& new1, World& new2, World& new3) {
+    World& old, World& cape, World& new1, World& new2, World& new3, int nnworlds) {
+
+    // We always pass 3 new worlds, but campaign mode only needs 1. Just carry along dummies for this.
 
     World newworlds[]{ new1, new2, new3 };
 
@@ -363,20 +361,17 @@ Export int find(int start, uint32_t end, int stepsize, float* score,
         // So we add 3 to the draws to make sure that this will not be an issue.
         Twister mt;
         mt.set(seed, ndraws + 3);
-
-        if (score) *score = 0.0;
+        *score = 0.0;
         if (testregion(seed, npcs + 1, pirate, islands0, islands, sizes, old, slots, score, minscore, mt)) continue;
         mt.reset();
         if (testregion(seed, npcs, pirate, islands0, islands, sizes, cape, slots, score, minscore, mt)) continue;
         mt.reset();
         // Draw the world right here.
-        int worldnum = mt.randint(3);
+        int worldnum = mt.randint(nnworlds);
         if (testregion(seed, npcs2, pirate2, islands02, islands2, sizes2, newworlds[worldnum], slots, score, minscore, mt)) continue;
 
-        if (score) {
-            if (*score < minscore)
-                continue;
-        }
+        if (*score < minscore)
+            continue;
 
         // Good end. Return the seed and score.
         free(islands[0]);
@@ -384,6 +379,11 @@ Export int find(int start, uint32_t end, int stepsize, float* score,
         free(slots);
         return seed;
     }
+
+
+
+
+
 
     // The function has exhausted its range of seed candidates. Clean up and return -1.
     free(islands[0]);

@@ -63,11 +63,11 @@ from time import time
 
 
 # General map settings:
-maptype     = "Corners"
+maptype     = "Archipelago"
 mapsize     = "Large"
 islandsize  = "Large"
 difficulty  = "Normal"
-gamemode    = "SandboxSingleplayer"
+gamemode    = "CampaignMode"
 dlc12       = True  # Is DLC 12 active (True/False). If True, the new world is larger.
 
 # These settings affect some small islands only.
@@ -205,6 +205,9 @@ roldworld, rcape, rnewworlds = BinarizeWorld(oldworld), BinarizeWorld(cape), [Bi
 rislands    = [BinarizeIslands(islands, unwanted, scores) for islands in oldislands]
 rislandsnew = [BinarizeIslands(islands, unwantednew, scoresnew) for islands in newislands]
 
+# 
+
+
 
 def IslandArgs(allislands):
     rv = []
@@ -223,7 +226,7 @@ fixedargs = [maxdraws,
              oldworldnpcs, oldworldpirate, newworldnpcs, newworldpirate,
              *IslandArgs(rislands),
              *IslandArgs(rislandsnew),
-             roldworld, rcape, *rnewworlds]
+             roldworld, rcape, *rnewworlds, 1 if gamemode=="CampaignMode" else 3]
 
 absdir = os.path.split(__file__)[0]
 dll = CDLL(absdir+"/src/findseed.dll")
@@ -234,7 +237,7 @@ dll.find.argtypes = [c_uint32, c_uint32, c_uint32, c_void_p,  # Seed range to te
                      c_uint32, c_uint32, c_uint32, c_uint32, # NPC, pirate count.
                      c_void_p, c_uint32, c_void_p, c_uint32, c_void_p, c_uint32,  # Old Islands.
                      c_void_p, c_uint32, c_void_p, c_uint32, c_void_p, c_uint32,  # New islands.
-                     *[POINTER(World) for i in range(5)]  # Worlds.
+                     *[POINTER(World) for i in range(5)], c_uint32  # Worlds. Number of new worlds (3 or 1).
                      ]
 
 
