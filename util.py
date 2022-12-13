@@ -54,7 +54,7 @@ def Load(maptype, mapsize, islandsize, difficulty, gamemode, dlc12):
     oldpaths = list(templates[templates.TemplateMapType.apply(lambda x: maptype in x.split(";"))].TemplateFilename)
     capepath = "data/dlc01/sessions/maps/sunken_treasures/moderate_continental_01/moderate_c_01.a7t"
     newpaths = templates[templates.TemplateRegion.apply(lambda x: "Colony01" in x.split(";"))]
-    newpaths = list(newpaths.EnlargedTemplateFilename if dlc12 and not iscampaign else newpaths.TemplateFilename)
+    newpaths = list(newpaths.EnlargedTemplateFilename if dlc12 else newpaths.TemplateFilename)
 
     assert not len(oldpaths)>1, "The old world should not have more than one template."
     assert not len(oldpaths)<1, "No matching old world template found."
@@ -65,9 +65,10 @@ def Load(maptype, mapsize, islandsize, difficulty, gamemode, dlc12):
     oldworld = maps[oldpaths[0]]
     cape = maps[capepath]
     newworlds = [maps[path] for path in newpaths]
+
+    # Quick fix for campaign mode: Make copies of the newworld so we get 3 of them again.
     if len(newworlds)!=3:
         newworlds = [newworlds[0]]*3
-
     
     return oldworld, cape, newworlds, LoadIslands("Moderate", difficulty, gamemode), LoadIslands("Colony01", difficulty, gamemode)
 
@@ -119,7 +120,6 @@ def ChooseIslandsForSlots(slots, mt, world, allislands):
             if island.id & slotid:
                 candidates.append(island)
         assert candidates, "Pool of islands is empty. Does this ever happen?"
-
         num = mt.Randint(len(candidates))
         island = candidates[num]
 
@@ -157,8 +157,9 @@ def Map(seed, world, allislands, npccount, piratecount, hasblake = True, verbose
     
     mt = MT(seed)
     # If we have multiple worlds to choose from, pick one.
+    # But make sure that we do not advance the RNG state for the triplified world for the campaign mode.
     if type(world) is list:
-        world = world[mt.Randint(len(world))]
+        world = world[mt.Randint(len(world))] if world[0] is not world[1] else world[0]
     
     slots = world
     if verbose: print(f"{mt.mti():04x} Selected template.")

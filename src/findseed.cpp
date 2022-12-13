@@ -136,7 +136,7 @@ struct Twister {
         // The odds of that happening are around one in a billion though.
         uint32_t rng;
         uint32_t limit = 0xffffffff;
-        if (mod < 1) return 0;
+        if (mod <= 1) return 0;
         if (limit % mod == mod - 1)
             return draw() % mod;
         while (1) {
@@ -361,6 +361,7 @@ Export int find(int start, uint32_t end, int stepsize, float* score,
         // So we add 3 to the draws to make sure that this will not be an issue.
         Twister mt;
         mt.set(seed, ndraws + 3);
+
         *score = 0.0;
         if (testregion(seed, npcs + 1, pirate, islands0, islands, sizes, old, slots, score, minscore, mt)) continue;
         mt.reset();
@@ -379,10 +380,6 @@ Export int find(int start, uint32_t end, int stepsize, float* score,
         free(slots);
         return seed;
     }
-
-
-
-
 
 
     // The function has exhausted its range of seed candidates. Clean up and return -1.

@@ -63,11 +63,11 @@ from time import time
 
 
 # General map settings:
-maptype     = "Archipelago"
+maptype     = "Corners"
 mapsize     = "Large"
 islandsize  = "Large"
 difficulty  = "Normal"
-gamemode    = "CampaignMode"
+gamemode    = "SandboxSingleplayer"
 dlc12       = True  # Is DLC 12 active (True/False). If True, the new world is larger.
 
 # These settings affect some small islands only.
@@ -205,7 +205,6 @@ roldworld, rcape, rnewworlds = BinarizeWorld(oldworld), BinarizeWorld(cape), [Bi
 rislands    = [BinarizeIslands(islands, unwanted, scores) for islands in oldislands]
 rislandsnew = [BinarizeIslands(islands, unwantednew, scoresnew) for islands in newislands]
 
-# 
 
 
 
