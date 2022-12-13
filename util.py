@@ -54,7 +54,7 @@ def Load(maptype, mapsize, islandsize, difficulty, gamemode, dlc12):
     oldpaths = list(templates[templates.TemplateMapType.apply(lambda x: maptype in x.split(";"))].TemplateFilename)
     capepath = "data/dlc01/sessions/maps/sunken_treasures/moderate_continental_01/moderate_c_01.a7t"
     newpaths = templates[templates.TemplateRegion.apply(lambda x: "Colony01" in x.split(";"))]
-    newpaths = list(newpaths.EnlargedTemplateFilename if dlc12 else newpaths.TemplateFilename)
+    newpaths = list(newpaths.EnlargedTemplateFilename if dlc12 and not iscampaign else newpaths.TemplateFilename)
 
     assert not len(oldpaths)>1, "The old world should not have more than one template."
     assert not len(oldpaths)<1, "No matching old world template found."
