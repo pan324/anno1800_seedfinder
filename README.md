@@ -1,6 +1,6 @@
 # Anno 1800 Seed Finder and Visualizer
 
-The finder goes through all seeds to find those with the highest scores. The default scoring is the number of buildable island tiles. To speed up things, it also allows a list of unwanted islands. These islands may not appear in their respective world. The obvious choice here are islands with rivers.
+The finder goes through all seeds to find those with the highest scores. The default scoring is the number of buildable land tiles. To speed up things, it also allows a list of unwanted islands. These islands may not appear in their respective world. The obvious choice here are islands with rivers.
 
 The map type, map size, island size and island difficulty can be adjusted. The finder works in two iterations, baseline filtering and then a fast seed refinement step. Both do the same thing but they still have their purpose.
 
