@@ -193,6 +193,11 @@ def f(s):
 unwanted = f(unwanted)
 unwantednew = f(unwantednew)
 
+if gamemode=="CampaignMode" and maptype != "Archipelago":
+     print("Campaign is only available on Archipelago. Setting maptype='Archipelago'.")
+     maptype = "Archipelago"
+
+
 pd.options.display.max_colwidth = 100
 pd.options.display.width  = 0
 pd.options.display.max_rows  = 100
