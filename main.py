@@ -68,7 +68,7 @@ mapsize     = "Large"
 islandsize  = "Large"
 difficulty  = "Normal"
 gamemode    = "SandboxSingleplayer"
-dlc12       = True  # Is DLC 12 active (True/False). If True, the new world is larger.
+dlc12       = True  # Is DLC 12 (New World Rising) active (True/False). If True, the new world is larger.
 
 # These settings affect some small islands only.
 oldworldnpcs   = 2    # Does not include Archibald and pirate.
@@ -284,7 +284,7 @@ def GetMinScore(scores, fraction):
 
 
 if __name__ == "__main__":
-    setting = f"{maptype}_{mapsize}_{islandsize}_{difficulty}_{gamemode}"
+    setting = f"{maptype}_{mapsize}_{islandsize}_{difficulty}_{gamemode}{'_dlc12' if dlc12 else ''}"
     baselinepath = f"seeds/{setting}.txt"
 
     try: os.mkdir("seeds")
