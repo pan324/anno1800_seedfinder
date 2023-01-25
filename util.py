@@ -22,7 +22,7 @@ REGIONS = {"-":        1,
            "Arctic":   8,
            "Africa":  16}
 GAMEMODES = {"SandboxSingleplayer": 1,
-             "SandboxMultilayer": 2,
+             "SandboxMultiplayer": 2,
              "CampaignMode": 4}
 ISLAND_TYPE = {"Normal": 1,
                "Starter": 2,
