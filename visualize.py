@@ -36,9 +36,9 @@ def MoveWindow(x=0,y=0):
     # The -8 offset is required but strange though.
     backend = plt.matplotlib.get_backend()
     f = plt.gcf()
-    if backend == 'TkAgg':
+    if backend == 'tkagg':
         f.canvas.manager.window.wm_geometry("+%d+%d" % (x-8, 0))
-    elif backend == 'WXAgg':
+    elif backend == 'wxagg':
         f.canvas.manager.window.SetPosition((x-8, 0))
     else:
         f.canvas.manager.window.move(x-8, 0)
@@ -102,6 +102,8 @@ def PlotWorld(df, oldworld=1, pos=0):
     # The bounding boxes should have almost no overlap now, or the images will overlap.
 ##    SCALE = 0.45  # Correct scale if the original images were not downsized in copypics.    
     SCALE = 0.9 
+    df["xsize"] = 0.0
+    df["ysize"] = 0.0
     df.loc[:,"xsize":"ysize"] *= SCALE
 
     # Find the borders and size of the map in ingame coordinates.
