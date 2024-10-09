@@ -34,7 +34,7 @@ def MoveWindow(x=0,y=0):
     """Move the window to the x,y position."""
     # https://stackoverflow.com/a/37999370
     # The -8 offset is required but strange though.
-    backend = plt.matplotlib.get_backend()
+    backend = plt.matplotlib.get_backend().lower()
     f = plt.gcf()
     if backend == 'tkagg':
         f.canvas.manager.window.wm_geometry("+%d+%d" % (x-8, 0))
